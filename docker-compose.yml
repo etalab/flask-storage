@@ -1,0 +1,16 @@
+version: "3"
+
+services:
+  mongo:
+    image: mongo:3.6
+    ports:
+      - "27017:27017"
+
+  s3:
+    image: minio/minio
+    environment:
+      MINIO_ACCESS_KEY: ABCDEFGHIJKLMNOQRSTU
+      MINIO_SECRET_KEY: abcdefghiklmnoqrstuvwxyz1234567890abcdef
+    command: server /export
+    ports:
+      - "9000:9000"
