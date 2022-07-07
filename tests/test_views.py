@@ -1,6 +1,6 @@
 from flask import url_for
 
-import flask_fs as fs
+import flask_storage as fs
 
 
 def test_url(app):

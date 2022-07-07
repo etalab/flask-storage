@@ -2,8 +2,8 @@ from os.path import join
 
 from flask import url_for
 
-from flask_fs import Storage, DEFAULTS, NONE
-from flask_fs.backends.local import LocalBackend
+from flask_storage import Storage, DEFAULTS, NONE
+from flask_storage.backends.local import LocalBackend
 
 
 def test_default_configuration(app):

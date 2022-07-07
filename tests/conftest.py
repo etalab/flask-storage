@@ -19,7 +19,7 @@ class TestConfig:
 
 class TestFlask(Flask):
     def configure(self, *storages, **configs):
-        import flask_fs as fs
+        import flask_storage as fs
         for key, value in configs.items():
             self.config[key] = value
         fs.init_app(self, *storages)
@@ -72,5 +72,5 @@ def utils(faker):
 @pytest.fixture
 def mock_backend(app, mocker):
     app.config['FS_BACKEND'] = 'mock'
-    mock = mocker.patch('flask_fs.backends.mock.MockBackend')
+    mock = mocker.patch('flask_storage.backends.mock.MockBackend')
     yield mock

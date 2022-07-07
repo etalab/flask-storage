@@ -41,8 +41,8 @@ dev_require = pip('develop.pip')
 
 setup(
     name='flask-fs',
-    version=__import__('flask_fs').__version__,
-    description=__import__('flask_fs').__description__,
+    version=__import__('flask_storage').__version__,
+    description=__import__('flask_storage').__description__,
     long_description=long_description,
     url='https://github.com/etalab/flask-fs',
     author='Etalab',
@@ -56,16 +56,15 @@ setup(
         'test': tests_require,
         's3': s3_require,
         'all': all_require,
-        'test': tests_require,
         'qa': tests_require,
         'ci': ci_require,
         'dev': dev_require,
     },
     entry_points={
         'fs.backend': [
-            'local = flask_fs.backends.local:LocalBackend',
-            's3 = flask_fs.backends.s3:S3Backend [s3]',
-            'mock = flask_fs.backends.mock:MockBackend',
+            'local = flask_storage.backends.local:LocalBackend',
+            's3 = flask_storage.backends.s3:S3Backend [s3]',
+            'mock = flask_storage.backends.mock:MockBackend',
         ]
     },
     license='MIT',

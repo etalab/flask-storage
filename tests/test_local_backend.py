@@ -3,8 +3,8 @@ import os
 
 from .test_backend_mixin import BackendTestCase
 
-from flask_fs.backends.local import LocalBackend
-from flask_fs.storage import Config
+from flask_storage.backends.local import LocalBackend
+from flask_storage.storage import Config
 
 
 class LocalBackendTest(BackendTestCase):

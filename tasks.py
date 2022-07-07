@@ -49,7 +49,7 @@ def cover(ctx, html=False):
     '''Run tests suite with coverage'''
     params = '--cov-report term --cov-report html' if html else ''
     with ctx.cd(ROOT):
-        ctx.run('pytest --cov flask_fs {0}'.format(params), pty=True)
+        ctx.run('pytest --cov flask_storage {0}'.format(params), pty=True)
 
 
 @task
@@ -62,7 +62,7 @@ def tox(ctx):
 def qa(ctx):
     '''Run a quality report'''
     with ctx.cd(ROOT):
-        ctx.run('flake8 flask_fs tests')
+        ctx.run('flake8 flask_storage tests')
 
 
 @task

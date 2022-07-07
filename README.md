@@ -2,7 +2,7 @@
 
 Simple and easy file storages for Flask
 
-Flask-RESTX is a community driven fork of [Flask-FS](https://github.com/noirbizarre/flask-fs)
+Flask-Storage is a community driven fork of [Flask-FS](https://github.com/noirbizarre/flask-fs)
 
 
 ## Compatibility
@@ -28,7 +28,7 @@ You can install Flask-FS with pip:
 .. code-block:: python
 
     from flask import Flask
-    import flask_fs as fs
+    import flask_storage as fs
 
     app = Flask(__name__)
     fs.init_app(app)

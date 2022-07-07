@@ -51,15 +51,15 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Flask-FS'
-copyright = u'2016, Axel Haustant'
+project = u'Flask-Storage'
+copyright = u'2016'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
 # The short X.Y version.
-release = __import__('flask_fs').__version__
+release = __import__('flask_storage').__version__
 # The short X.Y version.
 version = '.'.join(release.split('.')[:1])
 

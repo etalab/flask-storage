@@ -1,5 +1,5 @@
 [bumpr]
-file = flask_fs/__about__.py
+file = flask_storage/__about__.py
 vcs = git
 commit = true
 tag = true

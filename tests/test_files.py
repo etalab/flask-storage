@@ -1,4 +1,4 @@
-from flask_fs import files
+from flask_storage import files
 
 
 def test_extension():

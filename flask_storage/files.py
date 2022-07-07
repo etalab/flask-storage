@@ -105,7 +105,7 @@ class AllExcept:
 
         AllExcept(('exe', 'iso'))
 
-    to the :class:`~flask_fs.Storage` constructor as `extensions` parameter.
+    to the :class:`~flask_storage.Storage` constructor as `extensions` parameter.
 
     You can use any container, for example::
 

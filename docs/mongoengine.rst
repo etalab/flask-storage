@@ -3,7 +3,7 @@ Mongoengine support
 
 Flask-FS provides a thin mongoengine integration as :class:`field classes <mongoengine.base.fields.BaseField>`.
 
-Both :class:`~flask_fs.mongo.FileField` and :class:`~flask_fs.mongo.ImageField`
+Both :class:`~flask_storage.mongo.FileField` and :class:`~flask_storage.mongo.ImageField`
 provides a common interface:
 
 .. code-block:: python
@@ -40,7 +40,7 @@ provides a common interface:
     print(doc.file.filename)  # 'basename.file'
 
 
-The :class:`~flask_fs.mongo.ImageField` provides some extra features.
+The :class:`~flask_storage.mongo.ImageField` provides some extra features.
 
 On declaration:
 

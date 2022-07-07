@@ -1,5 +1,5 @@
 include README.md CHANGELOG.rst MANIFEST.in LICENSE
-recursive-include flask_fs *
+recursive-include flask_storage *
 recursive-include requirements *
 
 global-exclude *.pyc
