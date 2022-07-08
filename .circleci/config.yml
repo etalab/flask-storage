@@ -1,0 +1,88 @@
+---
+version: 2
+
+jobs:
+  build:
+    docker:
+      - image: udata/circleci:2-alpine
+      - image: circleci/mongo:3.6-stretch-ram
+      - image: minio/minio
+    environment:
+       BASH_ENV: /root/.bashrc
+    steps:
+      - checkout
+      - run:
+          name: Compute Python dependencies key
+          command: cat requirements/*.pip > python.deps
+      - run:
+          name: Get the base reference branch
+          command: export BASE_BRANCH=$(base_branch)
+      - restore_cache:
+          keys:
+            - py-cache-v1-{{ arch }}-{{ checksum "python.deps" }}
+            - py-cache-v1-{{ arch }}-{{ .Branch }}
+            - py-cache-v1-{{ arch }}-{{ .Environment.BASE_BRANCH }}
+      - run:
+          name: Install python dependencies
+          command: |
+            virtualenv venv
+            source venv/bin/activate
+            pip install -r requirements/develop.pip
+            pip install -e .
+      - save_cache:
+          key: py-cache-v1-{{ arch }}-{{ checksum "python.deps" }}
+          paths:
+            - venv
+      - save_cache:
+          key: py-cache-v1-{{ arch }}-{{ .Branch }}
+          paths:
+            - venv
+      - run:
+          name: Run tests
+          command: |
+            source venv/bin/activate
+            inv test
+      - run:
+          name: Build a distributable package
+          command: |
+            source venv/bin/activate
+            # Build a wheel release
+            inv dist
+      - store_artifacts:
+          path: dist
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
+
+  publish:
+    docker:
+      - image: udata/circleci:2-alpine
+    steps:
+      - attach_workspace:
+          at: .
+      - deploy:
+          name: Publish on PyPI
+          command: |
+            source venv/bin/activate
+            FLIT_USERNAME=${PYPI_USERNAME} FLIT_PASSWORD=${PYPI_PASSWORD} make publish
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build:
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*/
+      - publish:
+          requires:
+            - build
+          filters:
+            branches:
+              only:
+                - main
+                - /[0-9]+(\.[0-9]+)+/
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*/
+          context: org-global

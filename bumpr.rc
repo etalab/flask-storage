@@ -3,24 +3,25 @@ file = flask_storage/__about__.py
 vcs = git
 commit = true
 tag = true
+tag_format = v{version}
 push = true
-tests = tox
-publish = python setup.py bdist_wheel upload
-clean = inv clean
+tests = make test
+publish = make install
 files =
     README.md
 
-[bump]
-unsuffix = true
+[prepare]
+suffix = dev
 
 [prepare]
 part = patch
 suffix = dev
 
 [changelog]
-file = CHANGELOG.rst
-bump = {version} ({date:%Y-%m-%d})
-prepare = Current
+file = CHANGELOG.md
+bump = ## {version} ({date:%Y-%m-%d})
+prepare = ## Current (in progress)
+separator =
 
 [readthedoc]
 id = flask-fs

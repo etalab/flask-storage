@@ -1,8 +1,11 @@
--r s3.pip
+flake8==4.0.1
+flit==3.6.0
+Flask==2.1.2
 pytest==7.1.2
 pytest-faker==2.0.0
 pytest-flask==1.2.0
 pytest-sugar==0.9.4
 pytest-mock==3.8.2
 flask-mongoengine==0.9.5
-pillow
+Pillow==9.2.0
+boto3==1.24.24
