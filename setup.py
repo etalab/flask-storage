@@ -61,7 +61,7 @@ setup(
         'dev': dev_require,
     },
     entry_points={
-        'fs.backend': [
+        'storage.backend': [
             'local = flask_storage.backends.local:LocalBackend',
             's3 = flask_storage.backends.s3:S3Backend [s3]',
             'mock = flask_storage.backends.mock:MockBackend',

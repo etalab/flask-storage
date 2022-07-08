@@ -23,7 +23,7 @@ BACKEND_PREFIX = 'FS_{0}_'
 BACKEND_EXCLUDED_CONFIG = ('BACKEND', 'URL', 'ROOT')
 
 # Load registered backends
-BACKENDS = dict((ep.name, ep) for ep in pkg_resources.iter_entry_points('fs.backend'))
+BACKENDS = dict((ep.name, ep) for ep in pkg_resources.iter_entry_points('storage.backend'))
 
 
 class Config(dict):

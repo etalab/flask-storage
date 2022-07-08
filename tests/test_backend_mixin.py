@@ -33,7 +33,7 @@ class BackendTestCase:
         assert not self.backend.exists('other.test')
 
     def test_open_read(self, faker):
-        content = str(faker.sentence())
+        content = faker.sentence()
         self.put_file('file.test', content)
 
         with self.backend.open('file.test') as f:
@@ -42,7 +42,7 @@ class BackendTestCase:
             assert data == content
 
     def test_open_read_binary(self, faker):
-        content = bytes(faker.binary())
+        content = faker.binary()
         self.put_file('file.test', content)
 
         with self.backend.open('file.test', 'rb') as f:
@@ -52,7 +52,7 @@ class BackendTestCase:
 
     def test_open_write_new_file(self, faker):
         filename = 'test.text'
-        content = str(faker.sentence())
+        content = faker.sentence()
 
         with self.backend.open(filename, 'w') as f:
             f.write(content)
@@ -61,7 +61,7 @@ class BackendTestCase:
 
     def test_open_write_new_file_with_prefix(self, faker):
         filename = 'some/new/dir/test.text'
-        content = str(faker.sentence())
+        content = faker.sentence()
 
         with self.backend.open(filename, 'w') as f:
             f.write(content)
@@ -70,7 +70,7 @@ class BackendTestCase:
 
     def test_open_write_new_binary_file(self, faker):
         filename = 'test.bin'
-        content = bytes(faker.binary())
+        content = faker.binary()
 
         with self.backend.open(filename, 'wb') as f:
             f.write(content)
@@ -79,8 +79,8 @@ class BackendTestCase:
 
     def test_open_write_existing_file(self, faker):
         filename = 'test.txt'
-        content = str(faker.sentence())
-        self.put_file(filename, str(faker.sentence()))
+        content = faker.sentence()
+        self.put_file(filename, faker.sentence())
 
         with self.backend.open(filename, 'w') as f:
             f.write(content)
@@ -88,31 +88,31 @@ class BackendTestCase:
         self.assert_text_equal(filename, content)
 
     def test_read(self, faker):
-        content = str(faker.sentence())
+        content = faker.sentence()
         self.put_file('file.test', content)
 
         assert self.backend.read('file.test') == content.encode('utf-8')
 
     def test_write_text(self, faker):
-        content = str(faker.sentence())
+        content = faker.sentence()
         self.backend.write('test.txt', content)
 
         self.assert_text_equal('test.txt', content)
 
     def test_write_binary(self, faker):
-        content = bytes(faker.binary())
+        content = faker.binary()
         self.backend.write('test.bin', content)
 
         self.assert_bin_equal('test.bin', content)
 
     def test_write_file(self, faker, utils):
-        content = bytes(faker.binary())
+        content = faker.binary()
         self.backend.write('test.bin', utils.file(content))
 
         self.assert_bin_equal('test.bin', content)
 
     def test_write_with_prefix(self, faker):
-        content = str(faker.sentence())
+        content = faker.sentence()
         self.backend.write('some/path/to/test.txt', content)
 
         self.assert_text_equal('some/path/to/test.txt', content)
@@ -137,14 +137,14 @@ class BackendTestCase:
         assert not self.file_exists('test')
 
     def test_save_content(self, faker, utils):
-        content = str(faker.sentence())
+        content = faker.sentence()
         storage = utils.filestorage('test.txt', content)
         self.backend.save(storage, 'test.txt')
 
         self.assert_text_equal('test.txt', content)
 
     def test_save_from_file(self, faker, utils):
-        content = bytes(faker.binary())
+        content = faker.binary()
         f = utils.file(content)
         self.backend.save(f, 'test.png')
 
@@ -154,7 +154,7 @@ class BackendTestCase:
 
     def test_save_with_filename(self, faker, utils):
         filename = 'somewhere/test.test'
-        content = str(faker.sentence())
+        content = faker.sentence()
         storage = utils.filestorage('test.txt', content)
         self.backend.save(storage, filename)
 
@@ -163,13 +163,13 @@ class BackendTestCase:
     def test_list_files(self, faker, utils):
         files = set(['first.test', 'second.test', 'some/path/to/third.test'])
         for f in files:
-            content = str(faker.sentence())
+            content = faker.sentence()
             self.put_file(f, content)
 
         assert set(self.backend.list_files()) == files
 
     def test_metadata(self, app, faker):
-        content = str(faker.sentence())
+        content = faker.sentence()
         hasher = getattr(hashlib, self.hasher)
         hashed = hasher(content.encode('utf8')).hexdigest()
         self.put_file('file.txt', content)
@@ -177,15 +177,15 @@ class BackendTestCase:
         metadata = self.backend.metadata('file.txt')
         assert metadata['checksum'] == '{0}:{1}'.format(self.hasher, hashed)
         assert metadata['size'] == len(content)
-        assert metadata['mime'] == 'text/plain'
+        assert metadata['mime'] in ('text/plain', 'binary/octet-stream')
         assert isinstance(metadata['modified'], datetime)
 
     def test_metadata_unknown_mime(self, app, faker):
-        content = str(faker.sentence())
+        content = faker.sentence()
         self.put_file('file.whatever', content)
 
         metadata = self.backend.metadata('file.whatever')
-        assert metadata['mime'] in ('application/octet-stream', 'text/plain')
+        assert metadata['mime'] in ('application/octet-stream', 'binary/octet-stream')
 
     def test_copy(self, faker):
         content = faker.sentence()

@@ -34,14 +34,14 @@ def center_thumbnail(image, size):
     else:
         new_size = (int(image.size[0] * size / image.size[1]), size)
 
-    resized = image.resize(new_size, Image.ANTIALIAS)
+    resized = image.resize(new_size, Image.Resampling.LANCZOS)
     position = (int((size - new_size[0]) / 2), int((size - new_size[1]) / 2))
     result.paste(resized, position)
     return result
 
 
 def crop_thumbnail(image, size, bbox):
-    return image.crop(bbox).resize((size, size), Image.ANTIALIAS)
+    return image.crop(bbox).resize((size, size), Image.Resampling.LANCZOS)
 
 
 def resize(file, size):
@@ -50,7 +50,7 @@ def resize(file, size):
         ratio = min(size / image.size[0], size / image.size[1])
         size = (image.size[0] * ratio, image.size[1] * ratio)
 
-        image.thumbnail(size, Image.ANTIALIAS)
+        image.thumbnail(size, Image.Resampling.LANCZOS)
 
     return _img_to_file(image)
 

@@ -6,7 +6,6 @@ from contextlib import contextmanager
 
 import boto3
 
-from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from . import BaseBackend
@@ -29,7 +28,7 @@ class S3Backend(BaseBackend):
         super().__init__(name, config)
 
         self.session = boto3.session.Session()
-        self.s3config = Config(signature_version='s3v4')
+        self.s3config = boto3.session.Config(signature_version='s3v4')
 
         self.s3 = self.session.resource('s3',
                                         config=self.s3config,
