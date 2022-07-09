@@ -15,4 +15,4 @@ publish:  ## Publish to PyPi
 	python -m flit publish
 
 test:  ## Run tests
-	python -m pytest
+	python -m pytest -ra

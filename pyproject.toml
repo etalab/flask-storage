@@ -27,6 +27,6 @@ Home = "https://github.com/etalab/flask-storage"
 name = "flask_storage"
 
 [project.entry-points.'storage.backend']
-local = "flask_fs.backends.local:LocalBackend"
-s3 = "flask_fs.backends.s3:S3Backend"
-mock = "flask_fs.backends.mock:MockBackend"
+local = "flask_storage.backends.local:LocalBackend"
+s3 = "flask_storage.backends.s3:S3Backend"
+mock = "flask_storage.backends.mock:MockBackend"
