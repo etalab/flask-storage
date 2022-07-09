@@ -4,9 +4,12 @@ version: 2
 jobs:
   build:
     docker:
-      - image: udata/circleci:2-alpine
+      - image: cimg/python:3.9.12
       - image: circleci/mongo:3.6-stretch-ram
       - image: minio/minio
+        environment:
+          MINIO_ACCESS_KEY: ABCDEFGHIJKLMNOQRSTU
+          MINIO_SECRET_KEY: abcdefghiklmnoqrstuvwxyz1234567890abcdef
     environment:
        BASH_ENV: /root/.bashrc
     steps:
@@ -16,7 +19,7 @@ jobs:
           command: export BASE_BRANCH=$(base_branch)
       - restore_cache:
           keys:
-            - py-cache-v1-{{ arch }}-{{ checksum "requirements.txt" }}
+            - py-cache-v1-{{ arch }}-{{ checksum "pyproject.toml" }}
             - py-cache-v1-{{ arch }}-{{ .Branch }}
             - py-cache-v1-{{ arch }}-{{ .Environment.BASE_BRANCH }}
       - run:
@@ -27,7 +30,7 @@ jobs:
             make deps
             pip install -e .
       - save_cache:
-          key: py-cache-v1-{{ arch }}-{{ checksum "requirements.txt" }}
+          key: py-cache-v1-{{ arch }}-{{ checksum "pyproject.toml" }}
           paths:
             - venv
       - save_cache:
@@ -39,12 +42,14 @@ jobs:
           command: |
             source venv/bin/activate
             make test
+      - store_test_results:
+          path: reports/python
       - run:
           name: Build a distributable package
           command: |
             source venv/bin/activate
             # Build a wheel release
-            flit build
+            make build
       - store_artifacts:
           path: dist
       - persist_to_workspace:
@@ -54,7 +59,7 @@ jobs:
 
   publish:
     docker:
-      - image: udata/circleci:2-alpine
+      - image: cimg/python:3.9.12
     steps:
       - attach_workspace:
           at: .
