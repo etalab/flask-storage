@@ -6,7 +6,7 @@ jobs:
     docker:
       - image: cimg/python:3.9.12
       - image: circleci/mongo:3.6-stretch-ram
-      - image: minio/minio:RELEASE.2021-01-08T21-18-21Z
+      - image: minio/minio:RELEASE.2022-07-08T00-05-23Z
         environment:
           MINIO_ACCESS_KEY: ABCDEFGHIJKLMNOQRSTU
           MINIO_SECRET_KEY: abcdefghiklmnoqrstuvwxyz1234567890abcdef
