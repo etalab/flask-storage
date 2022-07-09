@@ -10,6 +10,7 @@ jobs:
         environment:
           MINIO_ACCESS_KEY: ABCDEFGHIJKLMNOQRSTU
           MINIO_SECRET_KEY: abcdefghiklmnoqrstuvwxyz1234567890abcdef
+        command: server /export
     environment:
        BASH_ENV: /root/.bashrc
     steps:
