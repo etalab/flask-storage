@@ -1,6 +1,6 @@
 # Changelog
 
-## Current (in progress)
+## 0.6.2 (2022-07-09)
 
 - Nothing yet
 
