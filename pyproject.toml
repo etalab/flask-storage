@@ -30,10 +30,13 @@ test = [
 [project.urls]
 Home = "https://github.com/etalab/flask-storage"
 
-[tool.flit.module]
-name = "flask_storage"
-
 [project.entry-points.'storage.backend']
 local = "flask_storage.backends.local:LocalBackend"
 s3 = "flask_storage.backends.s3:S3Backend"
 mock = "flask_storage.backends.mock:MockBackend"
+
+[tool.flit.module]
+name = "flask_storage"
+
+[tool.flit.sdist]
+exclude = ["reports/"]
