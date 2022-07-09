@@ -1,5 +1,5 @@
 [bumpr]
-file = flask_storage/__about__.py
+file = flask_storage/__init__.py
 vcs = git
 commit = true
 tag = true
@@ -13,18 +13,11 @@ files =
 [prepare]
 suffix = dev
 
-[prepare]
-part = patch
-suffix = dev
-
 [changelog]
 file = CHANGELOG.md
 bump = ## {version} ({date:%Y-%m-%d})
 prepare = ## Current (in progress)
 separator =
-
-[readthedoc]
-id = flask-fs
 
 [replace]
 dev = ?branch=master
