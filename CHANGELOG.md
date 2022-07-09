@@ -6,11 +6,11 @@
 
 ## 1.0.0 (2022-07-09)
 
-- Nothing yet
-
-## 0.6.2 (2022-07-09)
-
-- Nothing yet
+- Ownership change and package modernisation:
+  - Dropped python 2 support
+  - Dropped support for Swift and GridFS backends
+  - Switched from invoke to makefile
+  - Switched to `pyproject.toml`
 
 ## 0.6.1 (2018-04-19)
 
