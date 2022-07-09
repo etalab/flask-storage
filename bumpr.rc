@@ -10,7 +10,11 @@ publish = make install
 files =
     README.md
 
+[bump]
+unsuffix = true
+
 [prepare]
+part = patch
 suffix = dev
 
 [changelog]
@@ -18,6 +22,9 @@ file = CHANGELOG.md
 bump = ## {version} ({date:%Y-%m-%d})
 prepare = ## Current (in progress)
 separator =
+
+[readthedoc]
+id = udata
 
 [replace]
 dev = ?branch=master
