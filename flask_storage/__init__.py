@@ -1,6 +1,10 @@
-from os.path import join
+'''
+Flask storage
+'''
 
-from .__about__ import __version__, __description__  # noqa: Facade pattern
+
+import os
+from os.path import join
 
 try:
     from flask import current_app
@@ -12,6 +16,13 @@ try:
 
 except ImportError as e:
     print(e)
+
+
+tag = os.environ.get('CIRCLE_TAG')
+build_num = os.environ.get('CIRCLE_BUILD_NUM')
+
+__version__ = '0.6.2.dev' + (str(build_num) if not tag and build_num else '')
+__description__ = 'Simple and easy file storages for Flask'
 
 
 def by_name(name):

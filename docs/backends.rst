@@ -50,7 +50,7 @@ Custom backends
 ---------------
 
 Flask-FS allows you to defined your own backend
-by extending the :class:`~flask_fs.backends.BaseBackend` class.
+by extending the :class:`~flask_storage.backends.BaseBackend` class.
 
 You need to register your backend using setuptools entrypoints in your ``setup.py``:
 
@@ -70,7 +70,7 @@ Given these storages:
 
 .. code-block:: python
 
-    import flask_fs as fs
+    import flask_storage as fs
 
     files = fs.Storage('files')
     avatars = fs.Storage('avatars', fs.IMAGES)

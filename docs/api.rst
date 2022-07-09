@@ -6,65 +6,65 @@ API
 Core
 ----
 
-.. automodule:: flask_fs
+.. automodule:: flask_storage
     :members:
 
-.. autoclass:: flask_fs.Storage
+.. autoclass:: flask_storage.Storage
     :members:
 
 
 File types
 ----------
 
-.. autodata:: flask_fs.TEXT
-.. autodata:: flask_fs.DOCUMENTS
-.. autodata:: flask_fs.IMAGES
-.. autodata:: flask_fs.AUDIO
-.. autodata:: flask_fs.DATA
-.. autodata:: flask_fs.SCRIPTS
-.. autodata:: flask_fs.ARCHIVES
-.. autodata:: flask_fs.EXECUTABLES
-.. autodata:: flask_fs.DEFAULTS
-.. autodata:: flask_fs.ALL
+.. autodata:: flask_storage.TEXT
+.. autodata:: flask_storage.DOCUMENTS
+.. autodata:: flask_storage.IMAGES
+.. autodata:: flask_storage.AUDIO
+.. autodata:: flask_storage.DATA
+.. autodata:: flask_storage.SCRIPTS
+.. autodata:: flask_storage.ARCHIVES
+.. autodata:: flask_storage.EXECUTABLES
+.. autodata:: flask_storage.DEFAULTS
+.. autodata:: flask_storage.ALL
 
-.. autoclass:: flask_fs.All
-.. autoclass:: flask_fs.AllExcept
+.. autoclass:: flask_storage.All
+.. autoclass:: flask_storage.AllExcept
 
-.. .. automodule:: flask_fs.files
+.. .. automodule:: flask_storage.files
 ..     :members:
 
 
-.. automodule:: flask_fs.images
+.. automodule:: flask_storage.images
     :members:
 
 
 Backends
 --------
 
-.. automodule:: flask_fs.backends
+.. automodule:: flask_storage.backends
     :members:
 
 
-.. autoclass:: flask_fs.backends.local.LocalBackend
+.. autoclass:: flask_storage.backends.local.LocalBackend
     :members:
 
 
-.. autoclass:: flask_fs.backends.s3.S3Backend
+.. autoclass:: flask_storage.backends.s3.S3Backend
     :members:
 
 
-.. autoclass:: flask_fs.backends.swift.SwiftBackend
+.. autoclass:: flask_storage.backends.swift.SwiftBackend
     :members:
 
 
-.. autoclass:: flask_fs.backends.gridfs.GridFsBackend
+.. autoclass:: flask_storage.backends.gridfs.GridFsBackend
     :members:
 
 
 Mongo
 -----
 
-.. automodule:: flask_fs.mongo
+.. automodule:: flask_storage.mongo
     :members:
 
 
@@ -74,7 +74,7 @@ Errors
 
 These are all errors used accross this extensions.
 
-.. automodule:: flask_fs.errors
+.. automodule:: flask_storage.errors
     :members:
 
 
@@ -85,4 +85,4 @@ These are internal classes or helpers.
 Most of the time you shouldn't have to deal directly with them.
 
 
-.. autoclass:: flask_fs.storage.Config
+.. autoclass:: flask_storage.storage.Config

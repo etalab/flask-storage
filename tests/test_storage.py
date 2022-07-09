@@ -2,7 +2,7 @@ import io
 
 from flask import url_for
 
-import flask_fs as fs
+import flask_storage as fs
 
 import pytest
 

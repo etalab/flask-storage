@@ -1,0 +1,42 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "flask-storage"
+authors = [{name = "Etalab", email = "etalab@data.gouv.fr"}]
+readme = "README.md"
+dynamic = ["version", "description"]
+dependencies = [
+    "Flask==2.1.2",
+    "flask-mongoengine==0.9.5",
+    "Pillow==9.2.0",
+    "boto3==1.24.24"
+]
+
+[project.optional-dependencies]
+dev = [
+    "flake8==4.0.1",
+    "flit==3.6.0"
+]
+test = [
+    "pytest==7.1.2",
+    "pytest-faker==2.0.0",
+    "pytest-flask==1.2.0",
+    "pytest-sugar==0.9.4",
+    "pytest-mock==3.8.2",
+]
+
+[project.urls]
+Home = "https://github.com/etalab/flask-storage"
+
+[project.entry-points.'storage.backend']
+local = "flask_storage.backends.local:LocalBackend"
+s3 = "flask_storage.backends.s3:S3Backend"
+mock = "flask_storage.backends.mock:MockBackend"
+
+[tool.flit.module]
+name = "flask_storage"
+
+[tool.flit.sdist]
+exclude = ["reports/"]

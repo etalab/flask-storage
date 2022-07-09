@@ -3,8 +3,8 @@ import os
 
 from PIL import Image
 
-import flask_fs as fs
-from flask_fs.mongo import FileField, ImageField
+import flask_storage as fs
+from flask_storage.mongo import FileField, ImageField
 from flask_mongoengine import MongoEngine
 
 import pytest

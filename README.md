@@ -1,26 +1,26 @@
-# Flask-fs
+# Flask-Storage
 
 Simple and easy file storages for Flask
 
-Flask-RESTX is a community driven fork of [Flask-FS](https://github.com/noirbizarre/flask-fs)
+Flask-Storage is a community driven fork of [Flask-FS](https://github.com/noirbizarre/flask-fs)
 
 
 ## Compatibility
 
-Flask-FS requires 3.9+ and Flask 2+.
+Flask-Storage requires 3.9+ and Flask 2+.
 
 Amazon S3 support requires Boto3.
 
 
 ## Installation
 
-You can install Flask-FS with pip:
+You can install Flask-Storage with pip:
 
 .. code-block:: console
 
-    $ pip install flask-fs
+    $ pip install flask-storage
     # or
-    $ pip install flask-fs[s3]  # For Amazon S3 backend support
+    $ pip install flask-storage[s3]  # For Amazon S3 backend support
 
 
 ## Quick start
@@ -28,7 +28,7 @@ You can install Flask-FS with pip:
 .. code-block:: python
 
     from flask import Flask
-    import flask_fs as fs
+    import flask_storage as fs
 
     app = Flask(__name__)
     fs.init_app(app)
@@ -42,4 +42,4 @@ You can install Flask-FS with pip:
 
 ## Documentation
 
-The full documentation is hosted [on Read the Docs](http://flask-fs.readthedocs.org/en/latest/)
+The full documentation is hosted [on Read the Docs](http://flask-storage.readthedocs.org/en/latest/)

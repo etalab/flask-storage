@@ -1,4 +1,4 @@
-from flask_fs import files
+from flask_storage import files
 
 __all__ = [i.encode('ascii') for i in ('BaseBackend', 'DEFAULT_BACKEND')]
 
