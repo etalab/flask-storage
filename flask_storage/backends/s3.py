@@ -3,7 +3,6 @@ import io
 import logging
 import mimetypes
 
-
 from contextlib import contextmanager
 
 import boto3
