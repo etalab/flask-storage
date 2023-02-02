@@ -2,7 +2,9 @@
 
 ## Current (in progress)
 
-- Nothing yet
+- S3 backend [#2](https://github.com/etalab/flask-storage/pull/2)
+  - Fixed `serve()` is not implemented
+  - Fixed MIME type is not set when uploading objects
 
 ## 1.0.0 (2022-07-09)
 

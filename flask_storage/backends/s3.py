@@ -1,12 +1,14 @@
 import codecs
 import io
 import logging
+import mimetypes
 
 from contextlib import contextmanager
 
 import boto3
 
 from botocore.exceptions import ClientError
+from flask import send_file
 
 from . import BaseBackend
 
@@ -66,7 +68,8 @@ class S3Backend(BaseBackend):
         return obj['Body'].read()
 
     def write(self, filename, content):
-        return self.bucket.put_object(Key=filename, Body=self.as_binary(content))
+        return self.bucket.put_object(Key=filename, Body=self.as_binary(content),
+                                      ContentType=mimetypes.guess_type(filename)[0])
 
     def delete(self, filename):
         for obj in self.bucket.objects.filter(Prefix=filename):
@@ -95,6 +98,6 @@ class S3Backend(BaseBackend):
             'modified': obj.last_modified,
         }
 
-    # def serve(self, filename):
-    #     file = self.fs.get_last_version(filename)
-    #     return send_file(file, mimetype=file.content_type)
+    def serve(self, filename):
+        with self.open(filename) as f:
+            return send_file(f, self.get_metadata(filename)['mime'])
