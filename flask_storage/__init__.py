@@ -17,7 +17,7 @@ except ImportError as e:
     print(e)
 
 
-__version__ = '1.1.1.dev'
+__version__ = '1.2.0'
 __description__ = 'Simple and easy file storages for Flask'
 
 

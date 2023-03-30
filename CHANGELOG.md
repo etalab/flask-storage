@@ -1,6 +1,6 @@
 # Changelog
 
-## Current (in progress)
+## 1.2.0 (2023-03-30)
 
 - Upgrades [#3](https://github.com/etalab/flask-storage/pull/3):
     - Flask 2.1.2
