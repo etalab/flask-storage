@@ -2,7 +2,10 @@
 
 ## Current (in progress)
 
-- Nothing yet
+- Upgrades [#3](https://github.com/etalab/flask-storage/pull/3):
+    - Flask 2.1.2
+    - Flask-Mongoengine 1.0.0
+    - Boto3 1.26.102
 
 ## 1.1.0 (2023-03-30)
 
