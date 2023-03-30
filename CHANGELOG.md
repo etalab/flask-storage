@@ -1,6 +1,6 @@
 # Changelog
 
-## Current (in progress)
+## 1.1.0 (2023-03-30)
 
 - S3 backend [#2](https://github.com/etalab/flask-storage/pull/2)
   - Fixed `serve()` is not implemented
