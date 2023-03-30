@@ -2,7 +2,7 @@
 
 ## Current (in progress)
 
-- Upgrades markupsafe to 2.1.1 [#4](https://github.com/etalab/flask-storage/pull/4)
+- Upgrades markupsafe to 2.1.1 [#7](https://github.com/etalab/flask-storage/pull/7)
 
 ## 1.2.0 (2023-03-30)
 
