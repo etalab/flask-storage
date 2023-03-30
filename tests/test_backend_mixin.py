@@ -153,7 +153,7 @@ class BackendTestCase:
         self.assert_bin_equal('test.png', content)
 
     def test_save_with_filename(self, faker, utils):
-        filename = 'somewhere/test.test'
+        filename = 'somewhere/test.txt'
         content = faker.sentence()
         storage = utils.filestorage('test.txt', content)
         self.backend.save(storage, filename)
