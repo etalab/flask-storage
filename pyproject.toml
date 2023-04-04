@@ -12,7 +12,7 @@ dependencies = [
     "flask-mongoengine==1.0.0",
     "Pillow==9.2.0",
     "boto3==1.26.102",
-    "markupsafe==2.1.1"
+    "markupsafe==2.1.2"
 ]
 
 [project.optional-dependencies]
