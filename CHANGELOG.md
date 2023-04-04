@@ -1,6 +1,6 @@
 # Changelog
 
-## Current (in progress)
+## 1.3.2 (2023-04-04)
 
 - Upgrades markupsafe to 2.1.2 [#7](https://github.com/etalab/flask-storage/pull/7)
 
