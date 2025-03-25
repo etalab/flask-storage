@@ -8,11 +8,12 @@ authors = [{name = "Etalab", email = "etalab@data.gouv.fr"}]
 readme = "README.md"
 dynamic = ["version", "description"]
 dependencies = [
-    "Flask==2.2.5",
+    "Flask>=2.1.2",
     "flask-mongoengine>=1.0.0",
     "Pillow>=9.2.0",
     "boto3>=1.26.102",
-    "markupsafe>=2.1.2"
+    "markupsafe>=2.1.2",
+    "werkzeug==2.2.3"
 ]
 
 [project.optional-dependencies]
