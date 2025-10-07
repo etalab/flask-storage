@@ -7,7 +7,7 @@ Flask-Storage is a community driven fork of [Flask-FS](https://github.com/noirbi
 
 ## Compatibility
 
-Flask-Storage requires 3.9+ and Flask 1.1.4.
+Flask-Storage requires 3.11+ and Flask 1.1.4.
 
 Amazon S3 support requires Boto3.
 

@@ -1,5 +1,6 @@
-import pkg_resources
 import os.path
+
+from importlib.metadata import entry_points
 
 from flask import current_app, url_for, request, abort
 from urllib.parse import urljoin
@@ -23,7 +24,7 @@ BACKEND_PREFIX = 'FS_{0}_'
 BACKEND_EXCLUDED_CONFIG = ('BACKEND', 'URL', 'ROOT')
 
 # Load registered backends
-BACKENDS = dict((ep.name, ep) for ep in pkg_resources.iter_entry_points('storage.backend'))
+BACKENDS = dict((ep.name, ep) for ep in entry_points(group='storage.backend'))
 
 
 class Config(dict):

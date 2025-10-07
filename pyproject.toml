@@ -4,28 +4,26 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "flask-storage"
-authors = [{name = "Etalab", email = "etalab@data.gouv.fr"}]
+authors = [{ name = "Etalab", email = "etalab@data.gouv.fr" }]
 readme = "README.md"
 dynamic = ["version", "description"]
+requires-python = ">=3.11"
 dependencies = [
-    "Flask==2.1.2",
-    "flask-mongoengine==1.0.0",
-    "Pillow==9.2.0",
-    "boto3==1.26.102",
-    "markupsafe==2.1.2"
+    "Flask ~= 2.1",
+    "Pillow >= 9.2, < 12",
+    "boto3 ~= 1.26",
+    "markupsafe ~= 2.1",
+    "werkzeug ~= 2.2.3",
 ]
 
 [project.optional-dependencies]
-dev = [
-    "flake8==4.0.1",
-    "flit==3.6.0"
-]
+dev = ["flake8 ~= 4.0", "flit ~= 3.6"]
 test = [
-    "pytest==7.1.2",
-    "pytest-faker==2.0.0",
-    "pytest-flask==1.2.0",
-    "pytest-sugar==0.9.4",
-    "pytest-mock==3.8.2",
+    "pytest ~= 7.1",
+    "pytest-faker ~= 2.0",
+    "pytest-flask ~= 1.2",
+    "pytest-sugar ~= 0.9",
+    "pytest-mock ~= 3.8",
 ]
 
 [project.urls]

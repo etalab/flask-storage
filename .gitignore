@@ -61,3 +61,6 @@ target/
 
 # Jetbrain
 .idea/
+
+# uv
+uv.lock
