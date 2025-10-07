@@ -2,7 +2,9 @@
 
 ## Current (in progress)
 
-- Nothing yet
+- Bump minimum Python version to 3.11 [#12](https://github.com/etalab/flask-storage/pull/12)
+- Remove `flask-mongoengine` dependency [#12](https://github.com/etalab/flask-storage/pull/12)
+- Allow minors versions updates with semver [#12](https://github.com/etalab/flask-storage/pull/12)
 
 ## 1.3.2 (2023-04-04)
 
