@@ -30,7 +30,6 @@ jobs:
             source venv/bin/activate
             make deps
             pip install -e .
-            pip list
       - save_cache:
           key: py-cache-v3-{{ arch }}-{{ checksum "pyproject.toml" }}
           paths:
