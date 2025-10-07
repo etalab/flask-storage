@@ -7,12 +7,13 @@ name = "flask-storage"
 authors = [{ name = "Etalab", email = "etalab@data.gouv.fr" }]
 readme = "README.md"
 dynamic = ["version", "description"]
+requires-python = ">=3.9"
 dependencies = [
     "Flask ~= 2.1",
-    "flask-mongoengine-3 ~= 1.0",
     "Pillow >= 9.2, < 12",
     "boto3 ~= 1.26",
     "markupsafe ~= 2.1",
+    "werkzeug ~= 2.2.3",
 ]
 
 [project.optional-dependencies]
