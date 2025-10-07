@@ -1,5 +1,9 @@
 # Changelog
 
+## Current (in progress)
+
+- Nothing yet
+
 ## 1.4.0 (2025-10-07)
 
 - Bump minimum Python version to 3.11 [#12](https://github.com/etalab/flask-storage/pull/12)
