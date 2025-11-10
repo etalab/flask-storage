@@ -39,3 +39,8 @@ name = "flask_storage"
 
 [tool.flit.sdist]
 exclude = ["reports/"]
+
+[dependency-groups]
+dev = [
+    "bumpr>=0.3.8",
+]
