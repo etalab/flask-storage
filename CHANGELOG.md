@@ -1,6 +1,6 @@
 # Changelog
 
-## Current (in progress)
+## 1.4.1 (2025-11-10)
 
 - Bump dependencies [#14](https://github.com/etalab/flask-storage/pull/14)
 
