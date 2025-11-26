@@ -1,5 +1,9 @@
 # Changelog
 
+## Current (in progress)
+
+- Nothing yet
+
 ## 1.4.2 (2025-11-26)
 
 - Enable Flask 3 support [#15](https://github.com/etalab/flask-storage/pull/15)
