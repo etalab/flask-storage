@@ -38,12 +38,11 @@ class S3Backend(BaseBackend):
                                         region_name=config.region,
                                         aws_access_key_id=config.access_key,
                                         aws_secret_access_key=config.secret_key)
-        self.bucket = self.s3.Bucket(name)
+        self.bucket = self.s3.Bucket(config.get("bucket_name") or config.name)
 
-        try:
+        if not self.bucket.creation_date:
+            # The bucket does not exist, create it
             self.bucket.create()
-        except self.s3.meta.client.exceptions.BucketAlreadyOwnedByYou:
-            pass
 
     def exists(self, filename):
         try:
@@ -99,5 +98,5 @@ class S3Backend(BaseBackend):
         }
 
     def serve(self, filename):
-        with self.open(filename) as f:
+        with self.open(filename, mode="rb") as f:
             return send_file(f, self.get_metadata(filename)['mime'])
