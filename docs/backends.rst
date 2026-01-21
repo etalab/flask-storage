@@ -90,6 +90,7 @@ Here an example configuration with local files storages and s3 images storage:
 
     # storage specific configuration
     AVATARS_FS_BACKEND = 's3'
+    AVATARS_FS_BUCKET_NAME = 'avatars-bucket'  # optionnal, default to storage name
     IMAGES_FS_BACKEND = 's3'
     FILES_FS_URL = 'https://images.somewhere.com/'
     FILES_FS_URL = 'https://files.somewhere.com/'
