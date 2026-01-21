@@ -2,7 +2,7 @@
 
 ## Current (in progress)
 
-- Nothing yet
+- Add optional S3 bucket name config [#16](https://github.com/etalab/flask-storage/pull/16)
 
 ## 1.4.2 (2025-11-26)
 
