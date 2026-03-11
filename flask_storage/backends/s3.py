@@ -26,6 +26,12 @@ class S3Backend(BaseBackend):
     - `access_key`: The AWS credential access key
     - `secret_key`: The AWS credential secret key
     '''
+
+    _S3_OBJECT_OPTION_MAP = {
+        "object_acl": "ACL",
+        "object_storage_class": "StorageClass",
+    }
+
     def __init__(self, name, config):
         super().__init__(name, config)
 
@@ -67,8 +73,18 @@ class S3Backend(BaseBackend):
         return obj['Body'].read()
 
     def write(self, filename, content):
-        return self.bucket.put_object(Key=filename, Body=self.as_binary(content),
-                                      ContentType=mimetypes.guess_type(filename)[0])
+        # Build extra args for options present in config
+        extra_args = {
+            arg_name: self.config[config_key]
+            for config_key, arg_name in self._S3_OBJECT_OPTION_MAP.items()
+            if self.config.get(config_key)
+        }
+        return self.bucket.put_object(
+            Key=filename,
+            Body=self.as_binary(content),
+            ContentType=mimetypes.guess_type(filename)[0],
+            **extra_args,
+        )
 
     def delete(self, filename):
         for obj in self.bucket.objects.filter(Prefix=filename):

@@ -91,6 +91,8 @@ Here an example configuration with local files storages and s3 images storage:
     # storage specific configuration
     AVATARS_FS_BACKEND = 's3'
     AVATARS_FS_BUCKET_NAME = 'avatars-bucket'  # optionnal, default to storage name
+    AVATARS_FS_OBJECT_ACL = 'public-read'  # some S3 providers need to specify the ACL at the object level
+    AVATARS_FS_OBJECT_STORAGE_CLASS = 'STANDARD'  # specify the object storage class
     IMAGES_FS_BACKEND = 's3'
     FILES_FS_URL = 'https://images.somewhere.com/'
     FILES_FS_URL = 'https://files.somewhere.com/'
