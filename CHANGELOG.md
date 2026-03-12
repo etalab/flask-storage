@@ -2,7 +2,7 @@
 
 ## Current (in progress)
 
-- Nothing yet
+- feat(S3): add optional s3 extra args when pushing objects [#17](https://github.com/etalab/flask-storage/pull/17)
 
 ## 1.4.3 (2026-01-21)
 
