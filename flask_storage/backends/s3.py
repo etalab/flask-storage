@@ -66,24 +66,18 @@ class S3Backend(BaseBackend):
         else:  # mode == 'w'
             f = io.BytesIO() if 'b' in mode else io.StringIO()
             yield f
-            obj.put(Body=f.getvalue())
+            obj.put(Body=f.getvalue(), **self.get_object_extra_args())
 
     def read(self, filename):
         obj = self.bucket.Object(filename).get()
         return obj['Body'].read()
 
     def write(self, filename, content):
-        # Build extra args for options present in config
-        extra_args = {
-            arg_name: self.config[config_key]
-            for config_key, arg_name in self._S3_OBJECT_OPTION_MAP.items()
-            if config_key in self.config
-        }
         return self.bucket.put_object(
             Key=filename,
             Body=self.as_binary(content),
             ContentType=mimetypes.guess_type(filename)[0],
-            **extra_args,
+            **self.get_object_extra_args(),
         )
 
     def delete(self, filename):
@@ -116,3 +110,11 @@ class S3Backend(BaseBackend):
     def serve(self, filename):
         with self.open(filename, mode="rb") as f:
             return send_file(f, self.get_metadata(filename)['mime'])
+
+    def get_object_extra_args(self):
+        # Build extra args for options present in config
+        return {
+            arg_name: self.config[config_key]
+            for config_key, arg_name in self._S3_OBJECT_OPTION_MAP.items()
+            if config_key in self.config
+        }
