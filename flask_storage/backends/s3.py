@@ -77,7 +77,7 @@ class S3Backend(BaseBackend):
         extra_args = {
             arg_name: self.config[config_key]
             for config_key, arg_name in self._S3_OBJECT_OPTION_MAP.items()
-            if self.config.get(config_key)
+            if config_key in self.config
         }
         return self.bucket.put_object(
             Key=filename,
