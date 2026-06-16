@@ -496,6 +496,42 @@ def test_list_files_strips_prefix_and_skips_siblings(app, mock_backend):
     assert storage.list_files() == ['uuid/0', 'uuid/1']
 
 
+def test_prefix_not_in_served_route_url(app):
+    # The route URL must carry the bare filename: `serve()` re-applies the
+    # prefix, so embedding it here would prefix it twice when served.
+    storage = fs.Storage('test')
+    app.configure(storage, TEST_FS_PREFIX='chunks')
+
+    assert storage.url('uuid/0') == url_for('fs.get_file', fs='test', filename='uuid/0')
+
+
+def test_prefix_serve_uses_prefixed_key(app, mock_backend):
+    storage = fs.Storage('test')
+    app.configure(storage, TEST_FS_PREFIX='chunks')
+
+    backend = mock_backend.return_value
+    backend.exists.return_value = True
+
+    storage.serve('uuid/0')
+
+    backend.exists.assert_called_with('chunks/uuid/0')
+    backend.serve.assert_called_with('chunks/uuid/0')
+
+
+def test_prefix_metadata_uses_prefixed_key_but_returns_bare(app, mock_backend):
+    storage = fs.Storage('test')
+    app.configure(storage, TEST_FS_PREFIX='chunks')
+
+    backend = mock_backend.return_value
+    backend.metadata.return_value = {}
+
+    metadata = storage.metadata('uuid/0')
+
+    backend.metadata.assert_called_with('chunks/uuid/0')
+    assert metadata['filename'] == '0'
+    assert 'chunks' not in metadata['url']
+
+
 def test_metadata(app, mock_backend):
     storage = fs.Storage('test')
     app.configure(storage)
