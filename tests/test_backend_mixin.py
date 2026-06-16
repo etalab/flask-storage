@@ -136,6 +136,28 @@ class BackendTestCase:
         assert not self.file_exists('test/file.02')
         assert not self.file_exists('test')
 
+    def test_delete_keeps_prefix_siblings(self, faker):
+        # Deleting "foo/1" must not delete "foo/10": the S3 backend used to
+        # delete by raw prefix, which wiped sibling chunks (named "<uuid>/1",
+        # "<uuid>/10", ...) while combining a chunked upload.
+        content = faker.sentence()
+        self.put_file('foo/1', content)
+        self.put_file('foo/10', content)
+
+        self.backend.delete('foo/1')
+
+        assert not self.file_exists('foo/1')
+        assert self.file_exists('foo/10')
+
+    def test_write_without_extension(self, faker):
+        # A filename without extension has no guessable mimetype; the backend
+        # must still write it (S3 rejected ContentType=None). Chunk part files
+        # are named "<uuid>/<index>" and hit this case.
+        content = faker.sentence()
+        self.backend.write('noextension', content)
+
+        self.assert_text_equal('noextension', content)
+
     def test_save_content(self, faker, utils):
         content = faker.sentence()
         storage = utils.filestorage('test.txt', content)

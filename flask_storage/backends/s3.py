@@ -83,7 +83,12 @@ class S3Backend(BaseBackend):
         )
 
     def delete(self, filename):
-        for obj in self.bucket.objects.filter(Prefix=filename):
+        # Delete the exact object...
+        self.bucket.Object(filename).delete()
+        # ...and, if it is a "directory", everything stored under it. The
+        # trailing slash is required so deleting "foo/1" does not also wipe
+        # sibling keys sharing the prefix ("foo/10", "foo/11", ...).
+        for obj in self.bucket.objects.filter(Prefix=filename + "/"):
             obj.delete()
 
     def copy(self, filename, target):
