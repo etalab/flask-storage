@@ -4,6 +4,7 @@
 
 - fix(s3): fix content type if not guessed [#18](https://github.com/etalab/flask-storage/pull/18)
 - fix(S3): delete only the exact object instead of every key sharing its prefix [#19](https://github.com/etalab/flask-storage/pull/19)
+- feat: allow setting a per-storage `PREFIX` to store all files under a subfolder (e.g. to share a bucket) [#20](https://github.com/etalab/flask-storage/pull/20)
 
 ## 1.4.4 (2026-03-12)
 
