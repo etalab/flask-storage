@@ -448,6 +448,31 @@ def test_prefix_read_uses_prefixed_key(app, mock_backend):
     backend.read.assert_called_with('chunks/uuid/0')
 
 
+def test_prefix_open_uses_prefixed_key(app, mock_backend):
+    storage = fs.Storage('test')
+    app.configure(storage, TEST_FS_PREFIX='chunks')
+
+    backend = mock_backend.return_value
+    backend.exists.return_value = True
+    backend.open.return_value = io.StringIO('content')
+
+    with storage.open('uuid/0') as f:
+        assert f.read() == 'content'
+
+    backend.exists.assert_called_with('chunks/uuid/0')
+    backend.open.assert_called_with('chunks/uuid/0', 'r')
+
+
+def test_prefix_path_uses_prefixed_key(app, mock_backend):
+    storage = fs.Storage('test')
+    backend = mock_backend.return_value
+    backend.root = '/root'
+
+    app.configure(storage, TEST_FS_PREFIX='chunks')
+
+    assert storage.path('uuid/0') == '/root/chunks/uuid/0'
+
+
 def test_prefix_not_in_saved_filename(app, mock_backend, utils):
     # The prefix is a bucket namespace, not part of the file identity: the
     # backend stores under the prefixed key but save() returns the bare name.
@@ -493,7 +518,7 @@ def test_list_files_strips_prefix_and_skips_siblings(app, mock_backend):
 
     app.configure(storage, TEST_FS_PREFIX='chunks')
 
-    assert storage.list_files() == ['uuid/0', 'uuid/1']
+    assert list(storage.list_files()) == ['uuid/0', 'uuid/1']
     # The prefix is pushed down to the backend instead of listing the whole
     # (possibly shared) bucket and filtering client-side.
     backend.list_files.assert_called_with(prefix='chunks/')

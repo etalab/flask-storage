@@ -346,11 +346,11 @@ class Storage:
         # filtered client-side; the `startswith` guard keeps the strip safe even
         # if a backend ignores the hint.
         normalized = prefix + '/'
-        return [
+        return (
             filename[len(normalized):]
             for filename in self.backend.list_files(prefix=normalized)
             if filename.startswith(normalized)
-        ]
+        )
 
     def metadata(self, filename):
         '''
