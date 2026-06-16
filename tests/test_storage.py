@@ -494,6 +494,9 @@ def test_list_files_strips_prefix_and_skips_siblings(app, mock_backend):
     app.configure(storage, TEST_FS_PREFIX='chunks')
 
     assert storage.list_files() == ['uuid/0', 'uuid/1']
+    # The prefix is pushed down to the backend instead of listing the whole
+    # (possibly shared) bucket and filtering client-side.
+    backend.list_files.assert_called_with(prefix='chunks/')
 
 
 def test_prefix_not_in_served_route_url(app):

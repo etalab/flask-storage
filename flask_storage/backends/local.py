@@ -112,11 +112,14 @@ class LocalBackend(BaseBackend):
         self.ensure_path(target)
         shutil.move(src, dest)
 
-    def list_files(self):
-        for dirpath, dirnames, filenames in os.walk(self.root):
-            prefix = os.path.relpath(dirpath, self.root)
+    def list_files(self, prefix=None):
+        # Walk only the prefixed subtree when asked, but yield keys relative to
+        # the root so they stay comparable to non-prefixed listings.
+        root = os.path.join(self.root, prefix) if prefix else self.root
+        for dirpath, dirnames, filenames in os.walk(root):
+            rel = os.path.relpath(dirpath, self.root)
             for f in filenames:
-                yield os.path.join(prefix, f) if prefix != '.' else f
+                yield os.path.join(rel, f) if rel != '.' else f
 
     def path(self, filename):
         '''Return the full path for a given filename in the storage'''

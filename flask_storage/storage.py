@@ -188,6 +188,16 @@ class Storage:
             )
         return os.path.join(self.backend.root, self._prefixed(filename))
 
+    @property
+    def normalized_prefix(self):
+        '''
+        The configured storage prefix, stripped of surrounding slashes, or
+        ``None`` when no prefix is set. ``'chunks'`` and ``'/chunks/'`` are
+        therefore equivalent.
+        '''
+        prefix = self.config.get('prefix')
+        return prefix.strip('/') if prefix else None
+
     def _prefixed(self, filename):
         '''
         Prepend the configured storage prefix to a filename.
@@ -198,10 +208,10 @@ class Storage:
         returned by `save()` (and thus stored by callers). This allows several
         storages to share a single bucket, each under its own subfolder.
         '''
-        prefix = self.config.get('prefix')
+        prefix = self.normalized_prefix
         if not prefix:
             return filename
-        return '/'.join((prefix.strip('/'), filename.lstrip('/')))
+        return '/'.join((prefix, filename.lstrip('/')))
 
     def exists(self, filename):
         '''
@@ -327,15 +337,18 @@ class Storage:
         '''
         Returns a filename generator to iterate through all the file in the storage bucket
         '''
-        prefix = self.config.get('prefix')
+        prefix = self.normalized_prefix
         if not prefix:
             return self.backend.list_files()
         # Only expose this storage's own files, stripped of the prefix, so a
-        # shared bucket does not leak other storages' keys.
-        normalized = prefix.strip('/') + '/'
+        # shared bucket does not leak other storages' keys. The prefix is pushed
+        # down to the backend so a shared bucket is not fully listed and
+        # filtered client-side; the `startswith` guard keeps the strip safe even
+        # if a backend ignores the hint.
+        normalized = prefix + '/'
         return [
             filename[len(normalized):]
-            for filename in self.backend.list_files()
+            for filename in self.backend.list_files(prefix=normalized)
             if filename.startswith(normalized)
         ]
 
