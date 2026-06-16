@@ -64,13 +64,20 @@ Whether or not image should be compressedd/optimized by default.
 Storages configuration
 ----------------------
 
-Each storage configuration can be overriden from the application configuration.
-The configuration is loaded in the following order:
+Each storage configuration can be overridden from the application configuration.
+For a given ``KEY``, the value is resolved in the following order (most specific
+first):
 
-- ``FS_{BACKEND_NAME}_{KEY}`` (backend specific configuration)
-- ``{STORAGE_NAME}_FS_{KEY}`` (specific configuration)
-- ``FS_{KEY}`` (global configuration)
-- default value
+- ``{STORAGE_NAME}_FS_{KEY}`` (storage-specific configuration)
+- ``FS_{BACKEND_NAME}_{KEY}`` (backend-wide configuration)
+- the default value
+
+.. warning::
+
+    There is **no** generic ``FS_{KEY}`` global fallback: a plain ``FS_PREFIX``,
+    for instance, does *not* propagate to storages. Only a few global settings
+    are honored, each resolved on its own: ``FS_BACKEND`` (default backend),
+    ``FS_URL`` (base URL) and ``FS_ROOT`` (local root).
 
 Given a storage declared like this:
 
