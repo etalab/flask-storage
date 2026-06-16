@@ -37,6 +37,17 @@ class BaseBackend:
         '''Delete a file given its filename in the storage'''
         raise NotImplementedError('Delete operation is not implemented')
 
+    def list_files(self, prefix=None):
+        '''
+        Iterate over the keys stored in this backend.
+
+        When ``prefix`` is given, backends **must** only yield keys located
+        under it (and still yield full keys, not prefix-relative ones). Callers
+        rely on this contract and do not re-filter the result, so a backend that
+        ignores ``prefix`` is considered broken.
+        '''
+        raise NotImplementedError('List operation is not implemented')
+
     def copy(self, filename, target):
         '''Copy a file given its filename to another path in the storage'''
         raise NotImplementedError('Copy operation is not implemented')

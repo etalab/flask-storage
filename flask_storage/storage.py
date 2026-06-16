@@ -340,16 +340,14 @@ class Storage:
         prefix = self.normalized_prefix
         if not prefix:
             return self.backend.list_files()
-        # Only expose this storage's own files, stripped of the prefix, so a
-        # shared bucket does not leak other storages' keys. The prefix is pushed
-        # down to the backend so a shared bucket is not fully listed and
-        # filtered client-side; the `startswith` guard keeps the strip safe even
-        # if a backend ignores the hint.
+        # Push the prefix down to the backend, which by contract returns only
+        # the keys under it; we just strip the namespace so callers see the same
+        # names they saved. No client-side re-filtering: a backend that ignores
+        # the prefix is broken (see BaseBackend.list_files).
         normalized = prefix + '/'
         return (
             filename[len(normalized):]
             for filename in self.backend.list_files(prefix=normalized)
-            if filename.startswith(normalized)
         )
 
     def metadata(self, filename):

@@ -507,20 +507,17 @@ def test_prefix_in_direct_url(app):
     assert storage.url('uuid/0') == 'http://somewhere.com/static/chunks/uuid/0'
 
 
-def test_list_files_strips_prefix_and_skips_siblings(app, mock_backend):
+def test_list_files_pushes_prefix_down_and_strips_it(app, mock_backend):
+    # The prefix is pushed down to the backend, which by contract returns only
+    # the keys under it (full keys). Storage just strips the namespace; it does
+    # not re-filter, so the backend must not leak other storages' keys.
     storage = fs.Storage('test')
     backend = mock_backend.return_value
-    backend.list_files.return_value = [
-        'chunks/uuid/0',
-        'chunks/uuid/1',
-        'resources/other.txt',
-    ]
+    backend.list_files.return_value = ['chunks/uuid/0', 'chunks/uuid/1']
 
     app.configure(storage, TEST_FS_PREFIX='chunks')
 
     assert list(storage.list_files()) == ['uuid/0', 'uuid/1']
-    # The prefix is pushed down to the backend instead of listing the whole
-    # (possibly shared) bucket and filtering client-side.
     backend.list_files.assert_called_with(prefix='chunks/')
 
 
