@@ -73,11 +73,13 @@ class S3Backend(BaseBackend):
         return obj['Body'].read()
 
     def write(self, filename, content):
+        extra_args = self.get_object_extra_args()
+        if content_type:= mimetypes.guess_type(filename)[0]:
+            extra_args["ContentType"] = content_type
         return self.bucket.put_object(
             Key=filename,
             Body=self.as_binary(content),
-            ContentType=mimetypes.guess_type(filename)[0],
-            **self.get_object_extra_args(),
+            **extra_args
         )
 
     def delete(self, filename):
