@@ -1,23 +1,20 @@
-.PHONY: deps install lint publish test
+.PHONY: deps install lint build publish test
 
 deps:  ## Install dependencies
-	python -m pip install --upgrade pip
-	python -m pip install .[dev]
-	python -m pip install .[test]
-	python -m pip install .
+	uv sync
 
 install:  ## Install the package
-	python -m flit install
+	uv sync
 
 lint:  ## Lint and static-check
-	python -m flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-	python -m flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+	uv run ruff check .
+	uv run ruff format --check .
 
 build:  ## Build dist
-	python -m flit build
+	uv build
 
 publish:  ## Publish to PyPi
-	python -m flit publish
+	uv publish --username "${PYPI_USERNAME}" --password "${PYPI_PASSWORD}"
 
 test:  ## Run tests
-	python -m pytest -ra
+	uv run pytest -ra
