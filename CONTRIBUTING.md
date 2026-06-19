@@ -37,7 +37,3 @@ You need to install some dependencies to develop on Flask-Storage:
 .. code-block:: console
 
     $ uv sync
-
-A ``Makefile`` is provided to simplify the common tasks
-
-

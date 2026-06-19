@@ -15,15 +15,14 @@ jobs:
       BASH_ENV: /root/.bashrc
     steps:
       - checkout
-      - run:
-          name: Get the base reference branch
-          command: export BASE_BRANCH=$(base_branch)
       - restore_cache:
           keys:
+            # 1. Exact match of dependencies
             - py-cache-v4-{{ arch }}-{{ checksum "pyproject.toml" }}-{{ checksum "uv.lock" }}
-            - py-cache-v4-{{ arch }}-{{ checksum "pyproject.toml" }}
+            # 2. Latest cache from this branch
             - py-cache-v4-{{ arch }}-{{ .Branch }}
-            - py-cache-v4-{{ arch }}-{{ .Environment.BASE_BRANCH }}
+            # 3. Any latest cache for this architecture (fallback)
+            - py-cache-v4-{{ arch }}-
       - run:
           name: Install Python dependencies
           command: |
@@ -33,7 +32,7 @@ jobs:
           paths:
             - .venv
       - save_cache:
-          key: py-cache-v4-{{ arch }}-{{ checksum "pyproject.toml" }}
+          key: py-cache-v4-{{ arch }}-{{ .Branch }}
           paths:
             - .venv
       # TODO: apply ruff
@@ -66,7 +65,7 @@ jobs:
       - deploy:
           name: Publish on PyPI
           command: |
-            uv publish --username "${PYPI_USERNAME}" --password "${PYPI_PASSWORD}" dist/flask_storage-*.whl
+            uv publish dist/flask_storage-*.whl  # use UV_PUBLISH_TOKEN
 
 workflows:
   version: 2
