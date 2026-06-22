@@ -8,17 +8,13 @@ from os.path import join
 try:
     from flask import current_app
 
-    from .backends import BaseBackend, DEFAULT_BACKEND  # noqa: Facade pattern
-    from .errors import *  # noqa: Facade pattern
-    from .files import *  # noqa: Facade pattern
-    from .storage import Storage  # noqa: Facade pattern
+    from .backends import BaseBackend, DEFAULT_BACKEND  # noqa: F401,F811
+    from .errors import *  # noqa: F403,F401
+    from .files import *  # noqa: F403,F401
+    from .storage import Storage  # noqa: F401,F811
 
 except ImportError as e:
     print(e)
-
-
-__version__ = '1.4.5.dev'
-__description__ = 'Simple and easy file storages for Flask'
 
 
 def by_name(name):
