@@ -1,10 +1,10 @@
 ---
-version: 2
+version: 2.1
 
 jobs:
   build:
     docker:
-      - image: cimg/python:3.11
+      - image: ghcr.io/astral-sh/uv:python3.11-trixie
       - image: mongo:6.0.4
       - image: minio/minio:RELEASE.2022-07-08T00-05-23Z
         environment:
@@ -15,40 +15,40 @@ jobs:
       BASH_ENV: /root/.bashrc
     steps:
       - checkout
-      - run:
-          name: Get the base reference branch
-          command: export BASE_BRANCH=$(base_branch)
       - restore_cache:
           keys:
-            - py-cache-v3-{{ arch }}-{{ checksum "pyproject.toml" }}
-            - py-cache-v3-{{ arch }}-{{ .Branch }}
-            - py-cache-v3-{{ arch }}-{{ .Environment.BASE_BRANCH }}
+            # 1. Exact match of dependencies
+            - py-cache-v4-{{ arch }}-{{ checksum "pyproject.toml" }}-{{ checksum "uv.lock" }}
+            # 2. Latest cache from this branch
+            - py-cache-v4-{{ arch }}-{{ .Branch }}
+            # 3. Any latest cache for this architecture (fallback)
+            - py-cache-v4-{{ arch }}-
       - run:
-          name: Install python dependencies
+          name: Install Python dependencies
           command: |
-            virtualenv venv
-            source venv/bin/activate
-            make deps
-            pip install -e .
+            uv sync --frozen
       - save_cache:
-          key: py-cache-v3-{{ arch }}-{{ checksum "pyproject.toml" }}
+          key: py-cache-v4-{{ arch }}-{{ checksum "pyproject.toml" }}-{{ checksum "uv.lock" }}
           paths:
-            - venv
+            - .venv
       - save_cache:
-          key: py-cache-v3-{{ arch }}-{{ .Branch }}
+          key: py-cache-v4-{{ arch }}-{{ .Branch }}
           paths:
-            - venv
+            - .venv
+      # TODO: apply ruff
+      # - run:
+      #     name: Lint and format code
+      #     command: |
+      #       uv run ruff check .
+      #       uv run ruff format --check .
       - run:
           name: Run tests
           command: |
-            source venv/bin/activate
-            make test
+            uv run pytest -ra
       - run:
           name: Build a distributable package
           command: |
-            source venv/bin/activate
-            # Build a wheel release
-            make build
+            uv build
       - store_artifacts:
           path: dist
       - persist_to_workspace:
@@ -58,15 +58,14 @@ jobs:
 
   publish:
     docker:
-      - image: cimg/python:3.11
+      - image: ghcr.io/astral-sh/uv:python3.11-trixie
     steps:
       - attach_workspace:
           at: .
       - deploy:
           name: Publish on PyPI
           command: |
-            source venv/bin/activate
-            FLIT_USERNAME=${PYPI_USERNAME} FLIT_PASSWORD=${PYPI_PASSWORD} make publish
+            uv publish dist/flask_storage-*.whl  # use UV_PUBLISH_TOKEN
 
 workflows:
   version: 2
