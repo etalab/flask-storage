@@ -190,6 +190,15 @@ class BackendTestCase:
 
         assert set(self.backend.list_files()) == files
 
+    def test_list_files_with_prefix(self, faker, utils):
+        prefixed = set(['chunks/first.test', 'chunks/nested/second.test'])
+        for f in prefixed | {'other/third.test'}:
+            self.put_file(f, faker.sentence())
+
+        # The prefix is honored server-side: sibling keys are not returned, and
+        # the keys stay full (root-relative) so the storage can strip the prefix.
+        assert set(self.backend.list_files(prefix='chunks/')) == prefixed
+
     def test_metadata(self, app, faker):
         content = faker.sentence()
         hasher = getattr(hashlib, self.hasher)

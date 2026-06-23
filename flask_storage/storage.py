@@ -163,8 +163,11 @@ class Storage:
         if filename.startswith('/'):
             filename = filename[1:]
         if self.has_url:
-            return self.base_url + filename
+            # Direct bucket URL: must point at the real (prefixed) object key.
+            return self.base_url + self._prefixed(filename)
         else:
+            # Served through the app: the `fs.get_file` view re-applies the
+            # prefix via serve(), so pass the bare filename here.
             return url_for('fs.get_file', fs=self.name, filename=filename, _external=external)
 
     def path(self, filename):
@@ -183,13 +186,38 @@ class Storage:
                 'Direct file access is not supported by ' +
                 self.backend.__class__.__name__
             )
-        return os.path.join(self.backend.root, filename)
+        return os.path.join(self.backend.root, self._prefixed(filename))
+
+    @property
+    def normalized_prefix(self):
+        '''
+        The configured storage prefix, stripped of surrounding slashes, or
+        ``None`` when no prefix is set. ``'chunks'`` and ``'/chunks/'`` are
+        therefore equivalent.
+        '''
+        prefix = self.config.get('prefix')
+        return prefix.strip('/') if prefix else None
+
+    def _prefixed(self, filename):
+        '''
+        Prepend the configured storage prefix to a filename.
+
+        The prefix (``{NAME}_FS_PREFIX``) is a bucket location namespace, not
+        part of the file identity: it is applied to every backend access so the
+        objects physically live under it, but it never appears in the filename
+        returned by `save()` (and thus stored by callers). This allows several
+        storages to share a single bucket, each under its own subfolder.
+        '''
+        prefix = self.normalized_prefix
+        if not prefix:
+            return filename
+        return '/'.join((prefix, filename.lstrip('/')))
 
     def exists(self, filename):
         '''
         Verify whether a file exists or not.
         '''
-        return self.backend.exists(filename)
+        return self.backend.exists(self._prefixed(filename))
 
     def file_allowed(self, storage, basename):
         '''
@@ -223,9 +251,10 @@ class Storage:
         :param string filename: The storage root-relative filename
         :raises FileNotFound: If the file does not exists
         '''
-        if not self.backend.exists(filename):
+        key = self._prefixed(filename)
+        if not self.backend.exists(key):
             raise FileNotFound(filename)
-        return self.backend.read(filename)
+        return self.backend.read(key)
 
     def open(self, filename, mode='r', **kwargs):
         '''
@@ -235,9 +264,10 @@ class Storage:
         :param str mode: The open mode (``(r|w)b?``)
         :raises FileNotFound: If trying to read a file that does not exists
         '''
-        if 'r' in mode and not self.backend.exists(filename):
+        key = self._prefixed(filename)
+        if 'r' in mode and not self.backend.exists(key):
             raise FileNotFound(filename)
-        return self.backend.open(filename, mode, **kwargs)
+        return self.backend.open(key, mode, **kwargs)
 
     def write(self, filename, content, overwrite=False):
         '''
@@ -248,9 +278,10 @@ class Storage:
         :param bool overwrite: Whether to wllow overwrite or not
         :raises FileExists: If the file exists and `overwrite` is `False`
         '''
-        if not self.overwrite and not overwrite and self.backend.exists(filename):
+        key = self._prefixed(filename)
+        if not self.overwrite and not overwrite and self.backend.exists(key):
             raise FileExists()
-        return self.backend.write(filename, content)
+        return self.backend.write(key, content)
 
     def delete(self, filename):
         '''
@@ -258,7 +289,7 @@ class Storage:
 
         :param str filename: The storage root-relative filename
         '''
-        return self.backend.delete(filename)
+        return self.backend.delete(self._prefixed(filename))
 
     def save(self, file_or_wfs, filename=None, prefix=None, overwrite=None):
         '''
@@ -296,7 +327,9 @@ class Storage:
         if not overwrite and self.exists(filename):
             raise FileExists(filename)
 
-        self.backend.save(file_or_wfs, filename)
+        # The prefix is a bucket namespace, not part of the file identity:
+        # store under the prefixed key but return the bare filename to callers.
+        self.backend.save(file_or_wfs, self._prefixed(filename))
 
         return filename
 
@@ -304,7 +337,18 @@ class Storage:
         '''
         Returns a filename generator to iterate through all the file in the storage bucket
         '''
-        return self.backend.list_files()
+        prefix = self.normalized_prefix
+        if not prefix:
+            return self.backend.list_files()
+        # Push the prefix down to the backend, which by contract returns only
+        # the keys under it; we just strip the namespace so callers see the same
+        # names they saved. No client-side re-filtering: a backend that ignores
+        # the prefix is broken (see BaseBackend.list_files).
+        normalized = prefix + '/'
+        return (
+            filename[len(normalized):]
+            for filename in self.backend.list_files(prefix=normalized)
+        )
 
     def metadata(self, filename):
         '''
@@ -317,7 +361,7 @@ class Storage:
         - 'mime': the mime type
         - `modified`: the last modification date
         '''
-        metadata = self.backend.metadata(filename)
+        metadata = self.backend.metadata(self._prefixed(filename))
         metadata['filename'] = os.path.basename(filename)
         metadata['url'] = self.url(filename, external=True)
         return metadata
@@ -350,4 +394,4 @@ class Storage:
         '''Serve a file given its filename'''
         if not self.exists(filename):
             abort(404)
-        return self.backend.serve(filename)
+        return self.backend.serve(self._prefixed(filename))

@@ -27,7 +27,14 @@ FS_PREFIX
 
 **default**: ``None``
 
-An optionnal URL path prefix for storages (ex: ``'/fs'``).
+An optional URL path prefix under which the file-serving blueprint is mounted
+(ex: ``'/fs'``).
+
+This only affects the **HTTP route** used to serve files (when ``FS_SERVE`` is
+enabled): a file otherwise served at ``/files/...`` becomes ``/fs/files/...``.
+It is **not** a path inside the storage or bucket and does not change object
+keys. To store a storage's files under a subfolder, use the per-storage
+``PREFIX`` key (see `Storages configuration`_).
 
 
 FS_URL
@@ -57,13 +64,20 @@ Whether or not image should be compressedd/optimized by default.
 Storages configuration
 ----------------------
 
-Each storage configuration can be overriden from the application configuration.
-The configuration is loaded in the following order:
+Each storage configuration can be overridden from the application configuration.
+For a given ``KEY``, the value is resolved in the following order (most specific
+first):
 
-- ``FS_{BACKEND_NAME}_{KEY}`` (backend specific configuration)
-- ``{STORAGE_NAME}_FS_{KEY}`` (specific configuration)
-- ``FS_{KEY}`` (global configuration)
-- default value
+- ``{STORAGE_NAME}_FS_{KEY}`` (storage-specific configuration)
+- ``FS_{BACKEND_NAME}_{KEY}`` (backend-wide configuration)
+- the default value
+
+.. warning::
+
+    There is **no** generic ``FS_{KEY}`` global fallback: a plain ``FS_PREFIX``,
+    for instance, does *not* propagate to storages. Only a few global settings
+    are honored, each resolved on its own: ``FS_BACKEND`` (default backend),
+    ``FS_URL`` (base URL) and ``FS_ROOT`` (local root).
 
 Given a storage declared like this:
 
@@ -85,3 +99,33 @@ Or you can set a base URL to all storages for a given backend:
 
     FS_S3_URL = 'https://s3.somewhere.com/'
     FS_S3_REGION = 'us-east-1'
+
+Storage prefix
+~~~~~~~~~~~~~~
+
+The ``PREFIX`` key stores all of a storage's files under a subfolder of its
+backend location. It is a *namespace* applied transparently to every operation:
+it is prepended to the object key on every access (read, write, delete, ...),
+but it **never** appears in the filename returned by ``save()``. Stored
+references therefore stay prefix-agnostic, and ``list_files()`` only returns
+this storage's own files, with the prefix stripped.
+
+This is typically used to share a single S3 bucket between several storages,
+each isolated under its own folder:
+
+.. code-block:: python
+
+    CHUNKS_FS_BUCKET_NAME = 'my-shared-bucket'
+    CHUNKS_FS_PREFIX = 'chunks'   # objects stored under "chunks/..."
+
+Leading and trailing slashes are ignored, so ``'chunks'`` and ``'chunks/'`` are
+equivalent. You can also set it for a whole backend:
+
+.. code-block:: python
+
+    FS_S3_PREFIX = 'udata'        # every S3 storage stored under "udata/..."
+
+.. note::
+
+    This is unrelated to `FS_PREFIX`_, which mounts the file-serving HTTP route
+    and does not change object keys.

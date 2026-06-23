@@ -418,6 +418,145 @@ def test_list_files(app, mock_backend):
     assert storage.list_files() == ['one.txt']
 
 
+def test_prefix_applies_to_backend_keys(app, mock_backend):
+    storage = fs.Storage('test')
+    app.configure(storage, TEST_FS_PREFIX='chunks')
+
+    backend = mock_backend.return_value
+    backend.exists.return_value = False
+
+    storage.write('uuid/0', 'content')
+    backend.write.assert_called_with('chunks/uuid/0', 'content')
+
+    storage.exists('uuid/0')
+    backend.exists.assert_called_with('chunks/uuid/0')
+
+    storage.delete('uuid/0')
+    backend.delete.assert_called_with('chunks/uuid/0')
+
+
+def test_prefix_read_uses_prefixed_key(app, mock_backend):
+    storage = fs.Storage('test')
+    app.configure(storage, TEST_FS_PREFIX='chunks')
+
+    backend = mock_backend.return_value
+    backend.exists.return_value = True
+    backend.read.return_value = 'content'
+
+    assert storage.read('uuid/0') == 'content'
+    backend.exists.assert_called_with('chunks/uuid/0')
+    backend.read.assert_called_with('chunks/uuid/0')
+
+
+def test_prefix_open_uses_prefixed_key(app, mock_backend):
+    storage = fs.Storage('test')
+    app.configure(storage, TEST_FS_PREFIX='chunks')
+
+    backend = mock_backend.return_value
+    backend.exists.return_value = True
+    backend.open.return_value = io.StringIO('content')
+
+    with storage.open('uuid/0') as f:
+        assert f.read() == 'content'
+
+    backend.exists.assert_called_with('chunks/uuid/0')
+    backend.open.assert_called_with('chunks/uuid/0', 'r')
+
+
+def test_prefix_path_uses_prefixed_key(app, mock_backend):
+    storage = fs.Storage('test')
+    backend = mock_backend.return_value
+    backend.root = '/root'
+
+    app.configure(storage, TEST_FS_PREFIX='chunks')
+
+    assert storage.path('uuid/0') == '/root/chunks/uuid/0'
+
+
+def test_prefix_not_in_saved_filename(app, mock_backend, utils):
+    # The prefix is a bucket namespace, not part of the file identity: the
+    # backend stores under the prefixed key but save() returns the bare name.
+    storage = fs.Storage('test')
+    wfs = utils.filestorage('test.txt', 'content')
+    app.configure(storage, TEST_FS_PREFIX='chunks')
+
+    backend = mock_backend.return_value
+    backend.exists.return_value = False
+
+    filename = storage.save(wfs, filename='test.txt')
+
+    assert filename == 'test.txt'
+    backend.save.assert_called_with(wfs, 'chunks/test.txt')
+
+
+def test_prefix_strips_surrounding_slashes(app, mock_backend):
+    storage = fs.Storage('test')
+    app.configure(storage, TEST_FS_PREFIX='/chunks/')
+
+    backend = mock_backend.return_value
+    backend.exists.return_value = False
+
+    storage.write('uuid/0', 'content')
+    backend.write.assert_called_with('chunks/uuid/0', 'content')
+
+
+def test_prefix_in_direct_url(app):
+    storage = fs.Storage('test')
+    app.configure(storage, TEST_FS_PREFIX='chunks', TEST_FS_URL='somewhere.com/static')
+
+    assert storage.url('uuid/0') == 'http://somewhere.com/static/chunks/uuid/0'
+
+
+def test_list_files_pushes_prefix_down_and_strips_it(app, mock_backend):
+    # The prefix is pushed down to the backend, which by contract returns only
+    # the keys under it (full keys). Storage just strips the namespace; it does
+    # not re-filter, so the backend must not leak other storages' keys.
+    storage = fs.Storage('test')
+    backend = mock_backend.return_value
+    backend.list_files.return_value = ['chunks/uuid/0', 'chunks/uuid/1']
+
+    app.configure(storage, TEST_FS_PREFIX='chunks')
+
+    assert list(storage.list_files()) == ['uuid/0', 'uuid/1']
+    backend.list_files.assert_called_with(prefix='chunks/')
+
+
+def test_prefix_not_in_served_route_url(app):
+    # The route URL must carry the bare filename: `serve()` re-applies the
+    # prefix, so embedding it here would prefix it twice when served.
+    storage = fs.Storage('test')
+    app.configure(storage, TEST_FS_PREFIX='chunks')
+
+    assert storage.url('uuid/0') == url_for('fs.get_file', fs='test', filename='uuid/0')
+
+
+def test_prefix_serve_uses_prefixed_key(app, mock_backend):
+    storage = fs.Storage('test')
+    app.configure(storage, TEST_FS_PREFIX='chunks')
+
+    backend = mock_backend.return_value
+    backend.exists.return_value = True
+
+    storage.serve('uuid/0')
+
+    backend.exists.assert_called_with('chunks/uuid/0')
+    backend.serve.assert_called_with('chunks/uuid/0')
+
+
+def test_prefix_metadata_uses_prefixed_key_but_returns_bare(app, mock_backend):
+    storage = fs.Storage('test')
+    app.configure(storage, TEST_FS_PREFIX='chunks')
+
+    backend = mock_backend.return_value
+    backend.metadata.return_value = {}
+
+    metadata = storage.metadata('uuid/0')
+
+    backend.metadata.assert_called_with('chunks/uuid/0')
+    assert metadata['filename'] == '0'
+    assert 'chunks' not in metadata['url']
+
+
 def test_metadata(app, mock_backend):
     storage = fs.Storage('test')
     app.configure(storage)

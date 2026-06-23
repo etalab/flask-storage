@@ -98,8 +98,9 @@ class S3Backend(BaseBackend):
         }
         self.bucket.copy(src, target)
 
-    def list_files(self):
-        for f in self.bucket.objects.all():
+    def list_files(self, prefix=None):
+        objects = self.bucket.objects.filter(Prefix=prefix) if prefix else self.bucket.objects.all()
+        for f in objects:
             yield f.key
 
     def get_metadata(self, filename):

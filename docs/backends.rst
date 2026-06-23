@@ -103,3 +103,44 @@ In this configuration, storages will have the following configuration:
 - ``files``: ``local`` storage served on ``https://files.somewhere.com/``
 - ``avatars``: ``s3`` storage served on ``https://s3.somewhere.com/avatars/``
 - ``images``: ``s3`` storage served on ``https://images.somewhere.com/``
+
+
+Sharing a single bucket with prefixes
+-------------------------------------
+
+When several storages must live in the **same** bucket, give each one a
+``PREFIX`` so their keys never collide. The prefix is applied to every object
+key but never appears in the filename returned by ``save()`` (see
+:doc:`config`).
+
+.. code-block:: python
+
+    import flask_storage as fs
+
+    chunks = fs.Storage('chunks')
+    resources = fs.Storage('resources')
+
+.. code-block:: python
+
+    # Shared S3 configuration
+    FS_BACKEND = 's3'
+    FS_S3_ENDPOINT = 'https://s3-eu-west-2.amazonaws.com'
+    FS_S3_REGION = 'eu-west-2'
+    FS_S3_ACCESS_KEY = 'ABCDEFGHIJKLMNOQRSTU'
+    FS_S3_SECRET_KEY = 'abcdefghiklmnoqrstuvwxyz1234567890abcdef'
+
+    # One bucket for everything...
+    CHUNKS_FS_BUCKET_NAME = 'my-shared-bucket'
+    RESOURCES_FS_BUCKET_NAME = 'my-shared-bucket'
+
+    # ...each storage isolated under its own subfolder
+    CHUNKS_FS_PREFIX = 'chunks'
+    RESOURCES_FS_PREFIX = 'resources'
+
+With this configuration, ``chunks.save(file, filename='abc/0')`` returns
+``'abc/0'`` (the bare filename, stored as-is by the caller) while the object
+physically lands at ``chunks/abc/0`` in ``my-shared-bucket``. A
+``resources`` upload would land under ``resources/`` in the same bucket.
+
+A prefix common to every S3 storage can also be set once at the backend level
+with ``FS_S3_PREFIX``.
