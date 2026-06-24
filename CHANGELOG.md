@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.4.5 (2026-06-24)
+
+- chore: apply ruff ([#22](https://github.com/etalab/flask-storage/pull/22))
+- chore: switch to uv and tag version script ([#21](https://github.com/etalab/flask-storage/pull/21))
+- feat: allow setting a prefix for all files ([#20](https://github.com/etalab/flask-storage/pull/20))
+- fix: delete filename always by prefix in S3 ([#19](https://github.com/etalab/flask-storage/pull/19))
+- fix(s3): fix content type if not guessed ([#18](https://github.com/etalab/flask-storage/pull/18))
+- Update to version 1.4.5.dev for next development cycle
+
+
 ## 1.4.4 (2026-03-12)
 
 - feat(S3): add optional s3 extra args when pushing objects [#17](https://github.com/etalab/flask-storage/pull/17)
