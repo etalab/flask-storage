@@ -35,12 +35,11 @@ jobs:
           key: py-cache-v4-{{ arch }}-{{ .Branch }}
           paths:
             - .venv
-      # TODO: apply ruff
-      # - run:
-      #     name: Lint and format code
-      #     command: |
-      #       uv run ruff check .
-      #       uv run ruff format --check .
+      - run:
+          name: Lint and format code
+          command: |
+            uv run ruff check .
+            uv run ruff format --check .
       - run:
           name: Run tests
           command: |

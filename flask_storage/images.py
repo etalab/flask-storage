@@ -1,24 +1,23 @@
-'''
+"""
 This module handle image operations (thumbnailing, resizing...)
-'''
+"""
 
 import io
 import logging
 
 from PIL import Image
 
-
 log = logging.getLogger(__name__)
 
 
 def make_thumbnail(file, size, bbox=None):
-    '''
+    """
     Generate a thumbnail for a given image file.
 
     :param file file: The source image file to thumbnail
     :param int size: The thumbnail size in pixels (Thumbnails are squares)
     :param tuple bbox: An optionnal Bounding box definition for the thumbnail
-    '''
+    """
     image = Image.open(file)
     if bbox:
         thumbnail = crop_thumbnail(image, size, bbox)
@@ -28,7 +27,7 @@ def make_thumbnail(file, size, bbox=None):
 
 
 def center_thumbnail(image, size):
-    result = Image.new('RGBA', (size, size), (255, 255, 255, 0))
+    result = Image.new("RGBA", (size, size), (255, 255, 255, 0))
     if image.size[0] > image.size[1]:
         new_size = (size, int(image.size[1] * size / image.size[0]))
     else:
@@ -62,8 +61,8 @@ def optimize(file):
 
 def _img_to_file(image):
     out = io.BytesIO()
-    if image.mode == 'CMYK':
-        image = image.convert('RGBA')
-    image.save(out, image.format or 'png', optimize=True)
+    if image.mode == "CMYK":
+        image = image.convert("RGBA")
+    image.save(out, image.format or "png", optimize=True)
     out.seek(0)
     return out
