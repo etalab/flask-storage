@@ -4,12 +4,11 @@ import io
 import logging
 import os
 import shutil
-
 from datetime import datetime
 
 from flask import current_app, send_from_directory
-from werkzeug.utils import cached_property
 from werkzeug.datastructures import FileStorage
+from werkzeug.utils import cached_property
 
 from flask_storage import files
 
@@ -18,7 +17,7 @@ from . import BaseBackend
 log = logging.getLogger(__name__)
 
 
-CHUNK_SIZE = 2 ** 16
+CHUNK_SIZE = 2**16
 
 
 def sha1(file):
@@ -33,21 +32,22 @@ def sha1(file):
 
 
 class LocalBackend(BaseBackend):
-    '''
+    """
     A local file system storage
 
     Expect the following settings:
 
     - `root`: The file system root
-    '''
+    """
+
     @cached_property
     def root(self):
-        return self.config.get('root') or os.path.join(self.default_root, self.name)
+        return self.config.get("root") or os.path.join(self.default_root, self.name)
 
     @cached_property
     def default_root(self):
-        default_root = current_app.config.get('FS_ROOT')
-        return current_app.config.get('FS_LOCAL_ROOT', default_root)
+        default_root = current_app.config.get("FS_ROOT")
+        return current_app.config.get("FS_LOCAL_ROOT", default_root)
 
     def exists(self, filename):
         dest = self.path(filename)
@@ -64,22 +64,22 @@ class LocalBackend(BaseBackend):
                 if e.errno != errno.EEXIST:
                     raise
 
-    def open(self, filename, mode='r', encoding='utf8'):
+    def open(self, filename, mode="r", encoding="utf8"):
         dest = self.path(filename)
-        if 'w' in mode:
+        if "w" in mode:
             self.ensure_path(filename)
-        if 'b' in mode:
+        if "b" in mode:
             return open(dest, mode)
         else:
             return io.open(dest, mode, encoding=encoding)
 
     def read(self, filename):
-        with self.open(filename, 'rb') as f:
+        with self.open(filename, "rb") as f:
             return f.read()
 
     def write(self, filename, content):
         self.ensure_path(filename)
-        with self.open(filename, 'wb') as f:
+        with self.open(filename, "wb") as f:
             return f.write(self.as_binary(content))
 
     def delete(self, filename):
@@ -96,7 +96,7 @@ class LocalBackend(BaseBackend):
         if isinstance(file_or_wfs, FileStorage):
             file_or_wfs.save(dest)
         else:
-            with open(dest, 'wb') as out:
+            with open(dest, "wb") as out:
                 shutil.copyfileobj(file_or_wfs, out)
         return filename
 
@@ -119,24 +119,24 @@ class LocalBackend(BaseBackend):
         for dirpath, dirnames, filenames in os.walk(root):
             rel = os.path.relpath(dirpath, self.root)
             for f in filenames:
-                yield os.path.join(rel, f) if rel != '.' else f
+                yield os.path.join(rel, f) if rel != "." else f
 
     def path(self, filename):
-        '''Return the full path for a given filename in the storage'''
+        """Return the full path for a given filename in the storage"""
         return os.path.join(self.root, filename)
 
     def serve(self, filename):
-        '''Serve files for storages with direct file access'''
+        """Serve files for storages with direct file access"""
         return send_from_directory(self.root, filename)
 
     def get_metadata(self, filename):
-        '''Fetch all available metadata'''
+        """Fetch all available metadata"""
         dest = self.path(filename)
-        with open(dest, 'rb', buffering=0) as f:
-            checksum = 'sha1:{0}'.format(sha1(f))
+        with open(dest, "rb", buffering=0) as f:
+            checksum = "sha1:{0}".format(sha1(f))
         return {
-            'checksum': checksum,
-            'size': os.path.getsize(dest),
-            'mime': files.mime(filename),
-            'modified': datetime.fromtimestamp(os.path.getmtime(dest)),
+            "checksum": checksum,
+            "size": os.path.getsize(dest),
+            "mime": files.mime(filename),
+            "modified": datetime.fromtimestamp(os.path.getmtime(dest)),
         }

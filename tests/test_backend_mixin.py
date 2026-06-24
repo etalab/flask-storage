@@ -1,23 +1,21 @@
 import hashlib
-
 from datetime import datetime
 
 
 class BackendTestCase:
-
     def b(self, content):
         if isinstance(content, str):
-            content = content.encode('utf-8')
+            content = content.encode("utf-8")
         return content
 
     def put_file(self, filename, content):
-        raise NotImplementedError('You must implement this method')
+        raise NotImplementedError("You must implement this method")
 
     def get_file(self, filename):
-        raise NotImplementedError('You must implement this method')
+        raise NotImplementedError("You must implement this method")
 
     def file_exists(self, filename):
-        raise NotImplementedError('You must implement this method')
+        raise NotImplementedError("You must implement this method")
 
     def assert_bin_equal(self, filename, expected):
         data = self.get_file(filename)
@@ -25,165 +23,165 @@ class BackendTestCase:
 
     def assert_text_equal(self, filename, expected):
         data = self.get_file(filename)
-        assert data == expected.encode('utf-8')
+        assert data == expected.encode("utf-8")
 
     def test_exists(self):
-        self.put_file('file.test', 'test')
-        assert self.backend.exists('file.test')
-        assert not self.backend.exists('other.test')
+        self.put_file("file.test", "test")
+        assert self.backend.exists("file.test")
+        assert not self.backend.exists("other.test")
 
     def test_open_read(self, faker):
         content = faker.sentence()
-        self.put_file('file.test', content)
+        self.put_file("file.test", content)
 
-        with self.backend.open('file.test') as f:
+        with self.backend.open("file.test") as f:
             data = f.read()
             assert isinstance(data, str)
             assert data == content
 
     def test_open_read_binary(self, faker):
         content = faker.binary()
-        self.put_file('file.test', content)
+        self.put_file("file.test", content)
 
-        with self.backend.open('file.test', 'rb') as f:
+        with self.backend.open("file.test", "rb") as f:
             data = f.read()
             assert isinstance(data, bytes)
             assert data == content
 
     def test_open_write_new_file(self, faker):
-        filename = 'test.text'
+        filename = "test.text"
         content = faker.sentence()
 
-        with self.backend.open(filename, 'w') as f:
+        with self.backend.open(filename, "w") as f:
             f.write(content)
 
         self.assert_text_equal(filename, content)
 
     def test_open_write_new_file_with_prefix(self, faker):
-        filename = 'some/new/dir/test.text'
+        filename = "some/new/dir/test.text"
         content = faker.sentence()
 
-        with self.backend.open(filename, 'w') as f:
+        with self.backend.open(filename, "w") as f:
             f.write(content)
 
         self.assert_text_equal(filename, content)
 
     def test_open_write_new_binary_file(self, faker):
-        filename = 'test.bin'
+        filename = "test.bin"
         content = faker.binary()
 
-        with self.backend.open(filename, 'wb') as f:
+        with self.backend.open(filename, "wb") as f:
             f.write(content)
 
         self.assert_bin_equal(filename, content)
 
     def test_open_write_existing_file(self, faker):
-        filename = 'test.txt'
+        filename = "test.txt"
         content = faker.sentence()
         self.put_file(filename, faker.sentence())
 
-        with self.backend.open(filename, 'w') as f:
+        with self.backend.open(filename, "w") as f:
             f.write(content)
 
         self.assert_text_equal(filename, content)
 
     def test_read(self, faker):
         content = faker.sentence()
-        self.put_file('file.test', content)
+        self.put_file("file.test", content)
 
-        assert self.backend.read('file.test') == content.encode('utf-8')
+        assert self.backend.read("file.test") == content.encode("utf-8")
 
     def test_write_text(self, faker):
         content = faker.sentence()
-        self.backend.write('test.txt', content)
+        self.backend.write("test.txt", content)
 
-        self.assert_text_equal('test.txt', content)
+        self.assert_text_equal("test.txt", content)
 
     def test_write_binary(self, faker):
         content = faker.binary()
-        self.backend.write('test.bin', content)
+        self.backend.write("test.bin", content)
 
-        self.assert_bin_equal('test.bin', content)
+        self.assert_bin_equal("test.bin", content)
 
     def test_write_file(self, faker, utils):
         content = faker.binary()
-        self.backend.write('test.bin', utils.file(content))
+        self.backend.write("test.bin", utils.file(content))
 
-        self.assert_bin_equal('test.bin', content)
+        self.assert_bin_equal("test.bin", content)
 
     def test_write_with_prefix(self, faker):
         content = faker.sentence()
-        self.backend.write('some/path/to/test.txt', content)
+        self.backend.write("some/path/to/test.txt", content)
 
-        self.assert_text_equal('some/path/to/test.txt', content)
+        self.assert_text_equal("some/path/to/test.txt", content)
 
     def test_delete(self, faker):
         content = faker.sentence()
-        self.put_file('file.test', content)
+        self.put_file("file.test", content)
 
-        self.backend.delete('file.test')
+        self.backend.delete("file.test")
 
-        assert not self.file_exists('file.test')
+        assert not self.file_exists("file.test")
 
     def test_delete_directory(self, faker):
         content = faker.sentence()
-        self.put_file('test/file.01', content)
-        self.put_file('test/file.02', content)
+        self.put_file("test/file.01", content)
+        self.put_file("test/file.02", content)
 
-        self.backend.delete('test')
+        self.backend.delete("test")
 
-        assert not self.file_exists('test/file.01')
-        assert not self.file_exists('test/file.02')
-        assert not self.file_exists('test')
+        assert not self.file_exists("test/file.01")
+        assert not self.file_exists("test/file.02")
+        assert not self.file_exists("test")
 
     def test_delete_keeps_prefix_siblings(self, faker):
         # Deleting "foo/1" must not delete "foo/10": the S3 backend used to
         # delete by raw prefix, which wiped sibling chunks (named "<uuid>/1",
         # "<uuid>/10", ...) while combining a chunked upload.
         content = faker.sentence()
-        self.put_file('foo/1', content)
-        self.put_file('foo/10', content)
+        self.put_file("foo/1", content)
+        self.put_file("foo/10", content)
 
-        self.backend.delete('foo/1')
+        self.backend.delete("foo/1")
 
-        assert not self.file_exists('foo/1')
-        assert self.file_exists('foo/10')
+        assert not self.file_exists("foo/1")
+        assert self.file_exists("foo/10")
 
     def test_write_without_extension(self, faker):
         # A filename without extension has no guessable mimetype; the backend
         # must still write it (S3 rejected ContentType=None). Chunk part files
         # are named "<uuid>/<index>" and hit this case.
         content = faker.sentence()
-        self.backend.write('noextension', content)
+        self.backend.write("noextension", content)
 
-        self.assert_text_equal('noextension', content)
+        self.assert_text_equal("noextension", content)
 
     def test_save_content(self, faker, utils):
         content = faker.sentence()
-        storage = utils.filestorage('test.txt', content)
-        self.backend.save(storage, 'test.txt')
+        storage = utils.filestorage("test.txt", content)
+        self.backend.save(storage, "test.txt")
 
-        self.assert_text_equal('test.txt', content)
+        self.assert_text_equal("test.txt", content)
 
     def test_save_from_file(self, faker, utils):
         content = faker.binary()
         f = utils.file(content)
-        self.backend.save(f, 'test.png')
+        self.backend.save(f, "test.png")
 
         f.seek(0)
 
-        self.assert_bin_equal('test.png', content)
+        self.assert_bin_equal("test.png", content)
 
     def test_save_with_filename(self, faker, utils):
-        filename = 'somewhere/test.txt'
+        filename = "somewhere/test.txt"
         content = faker.sentence()
-        storage = utils.filestorage('test.txt', content)
+        storage = utils.filestorage("test.txt", content)
         self.backend.save(storage, filename)
 
         self.assert_text_equal(filename, content)
 
     def test_list_files(self, faker, utils):
-        files = set(['first.test', 'second.test', 'some/path/to/third.test'])
+        files = set(["first.test", "second.test", "some/path/to/third.test"])
         for f in files:
             content = faker.sentence()
             self.put_file(f, content)
@@ -191,51 +189,51 @@ class BackendTestCase:
         assert set(self.backend.list_files()) == files
 
     def test_list_files_with_prefix(self, faker, utils):
-        prefixed = set(['chunks/first.test', 'chunks/nested/second.test'])
-        for f in prefixed | {'other/third.test'}:
+        prefixed = set(["chunks/first.test", "chunks/nested/second.test"])
+        for f in prefixed | {"other/third.test"}:
             self.put_file(f, faker.sentence())
 
         # The prefix is honored server-side: sibling keys are not returned, and
         # the keys stay full (root-relative) so the storage can strip the prefix.
-        assert set(self.backend.list_files(prefix='chunks/')) == prefixed
+        assert set(self.backend.list_files(prefix="chunks/")) == prefixed
 
     def test_metadata(self, app, faker):
         content = faker.sentence()
         hasher = getattr(hashlib, self.hasher)
-        hashed = hasher(content.encode('utf8')).hexdigest()
-        self.put_file('file.txt', content)
+        hashed = hasher(content.encode("utf8")).hexdigest()
+        self.put_file("file.txt", content)
 
-        metadata = self.backend.metadata('file.txt')
-        assert metadata['checksum'] == '{0}:{1}'.format(self.hasher, hashed)
-        assert metadata['size'] == len(content)
-        assert metadata['mime'] in ('text/plain', 'binary/octet-stream')
-        assert isinstance(metadata['modified'], datetime)
+        metadata = self.backend.metadata("file.txt")
+        assert metadata["checksum"] == "{0}:{1}".format(self.hasher, hashed)
+        assert metadata["size"] == len(content)
+        assert metadata["mime"] in ("text/plain", "binary/octet-stream")
+        assert isinstance(metadata["modified"], datetime)
 
     def test_metadata_unknown_mime(self, app, faker):
         content = faker.sentence()
-        self.put_file('file.whatever', content)
+        self.put_file("file.whatever", content)
 
-        metadata = self.backend.metadata('file.whatever')
-        assert metadata['mime'] in ('application/octet-stream', 'binary/octet-stream')
+        metadata = self.backend.metadata("file.whatever")
+        assert metadata["mime"] in ("application/octet-stream", "binary/octet-stream")
 
     def test_copy(self, faker):
         content = faker.sentence()
-        self.put_file('file.test', content)
-        target = 'other/path/to/file.test2'
+        self.put_file("file.test", content)
+        target = "other/path/to/file.test2"
 
-        self.backend.copy('file.test', target)
+        self.backend.copy("file.test", target)
 
-        assert self.file_exists('file.test')
+        assert self.file_exists("file.test")
         assert self.file_exists(target)
         self.assert_text_equal(target, content)
 
     def test_move(self, faker):
         content = faker.sentence()
-        self.put_file('file.test', content)
-        target = 'other/path/to/file.test2'
+        self.put_file("file.test", content)
+        target = "other/path/to/file.test2"
 
-        self.backend.move('file.test', target)
+        self.backend.move("file.test", target)
 
-        assert not self.file_exists('file.test')
+        assert not self.file_exists("file.test")
         assert self.file_exists(target)
         self.assert_text_equal(target, content)
