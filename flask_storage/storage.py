@@ -82,6 +82,15 @@ class Storage:
         self.backend = None
         self.overwrite = overwrite
 
+    def __deepcopy__(self, memo):
+        # A storage is a single application-wide object, registered once on the
+        # app: nothing ever needs a duplicate of one. Copying it would clone its
+        # backend too, and the S3 backend owns boto3 clients, which recurse
+        # until the stack blows when deep-copied. Mongoengine reaches us that
+        # way: it deep-copies a document's fields whenever auto-dereferencing is
+        # off, and those fields point here.
+        return self
+
     def configure(self, app):
         """
         Load configuration from application configuration.

@@ -222,16 +222,6 @@ class FileField(BaseField):
         self.basename = basename
         super().__init__(*args, **kwargs)
 
-    def __deepcopy__(self, memo):
-        # A field holds a reference to the application `Storage`, hence to its
-        # backend — which, on S3, owns boto3 clients that recurse forever when
-        # copied. Mongoengine deep-copies a document's fields whenever
-        # auto-dereferencing is off (`no_dereference()`), so copy the field
-        # itself but keep pointing at the same storage.
-        copied = self.__class__.__new__(self.__class__)
-        copied.__dict__.update(self.__dict__)
-        return copied
-
     def proxy(self, filename=None, instance=None, **kwargs):
         return self.proxy_class(
             fs=self.fs,
