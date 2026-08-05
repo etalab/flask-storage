@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.6 (2026-08-05)
+
+- fix: do not deep copy the storage when mongoengine copies a FileField ([#23](https://github.com/etalab/flask-storage/pull/23))
+
+
 ## 1.4.5 (2026-06-24)
 
 - chore: apply ruff ([#22](https://github.com/etalab/flask-storage/pull/22))
