@@ -99,7 +99,22 @@ class S3BackendTest(BackendTestCase):
 
         self.assert_bin_equal("stream.bin", content)
 
-    def test_metadata_of_a_multipart_upload_has_no_checksum(self, app):
+    def test_save_leaves_the_file_open(self, faker, utils):
+        # ImageField stores the same file object several times, seeking back to
+        # its start in between (flask_storage/mongo.py:143-155): a save that
+        # consumed the caller's file would break thumbnail generation.
+        content = faker.binary()
+        f = utils.file(content)
+
+        self.backend.save(f, "first.bin")
+        f.seek(0)
+        self.backend.save(f, "second.bin")
+
+        assert not f.closed
+        self.assert_bin_equal("first.bin", content)
+        self.assert_bin_equal("second.bin", content)
+
+    def test_metadata_of_a_multipart_upload_has_no_checksum(self):
         # The ETag of a multipart object digests the parts' digests, not the
         # content: there is no MD5 to report, and reporting the ETag as one
         # would hand out a checksum that does not match the file.

@@ -1,12 +1,13 @@
 import codecs
 import io
 import logging
-import mimetypes
 from contextlib import contextmanager
 
 import boto3
 from botocore.exceptions import ClientError
 from flask import send_file
+
+from flask_storage import files
 
 from . import BaseBackend
 
@@ -78,14 +79,13 @@ class S3Backend(BaseBackend):
 
     @contextmanager
     def open(self, filename, mode="r", encoding="utf8"):
-        obj = self.bucket.Object(filename)
         if "r" in mode:
-            f = obj.get()["Body"]
+            f = self.bucket.Object(filename).get()["Body"]
             yield f if "b" in mode else codecs.getreader(encoding)(f)
         else:  # mode == 'w'
             f = io.BytesIO() if "b" in mode else io.StringIO()
             yield f
-            obj.put(Body=f.getvalue(), **self.get_object_extra_args(filename))
+            self.write(filename, f.getvalue())
 
     def read(self, filename):
         obj = self.bucket.Object(filename).get()
@@ -134,24 +134,19 @@ class S3Backend(BaseBackend):
         """Fetch all availabe metadata"""
         obj = self.bucket.Object(filename)
         mime = obj.content_type.split(";", 1)[0] if obj.content_type else None
+        # An object uploaded in several parts has a digest of its parts' digests
+        # as ETag, suffixed with the part count — not a digest of its content.
+        # Short of downloading the whole object there is no way to get the real
+        # one, so report none rather than a checksum that does not match the
+        # file: whoever wrote it is the only one in position to have digested it.
+        etag = obj.e_tag.strip('"')
+        checksum = None if "-" in etag else "md5:{0}".format(etag)
         return {
-            "checksum": self.get_checksum(obj),
+            "checksum": checksum,
             "size": obj.content_length,
             "mime": mime,
             "modified": obj.last_modified,
         }
-
-    def get_checksum(self, obj):
-        """The MD5 of an object, when S3 happens to expose one.
-
-        An object uploaded in several parts has a digest of its parts' digests
-        as ETag, suffixed with the part count — not a digest of its content.
-        There is no way to get the real one back short of downloading the whole
-        object, so `None` is returned rather than a wrong checksum: whoever
-        wrote the file is the only one in position to have digested it.
-        """
-        etag = obj.e_tag.strip('"')
-        return None if "-" in etag else "md5:{0}".format(etag)
 
     def serve(self, filename):
         with self.open(filename, mode="rb") as f:
@@ -166,6 +161,6 @@ class S3Backend(BaseBackend):
         }
         # S3 stores the content type with the object and serves it back as-is,
         # so it has to be set at write time; it defaults to binary/octet-stream.
-        if content_type := mimetypes.guess_type(filename)[0]:
+        if content_type := files.mime(filename):
             extra_args["ContentType"] = content_type
         return extra_args
