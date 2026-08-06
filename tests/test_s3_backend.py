@@ -1,3 +1,4 @@
+import io
 import logging
 
 import boto3
@@ -12,6 +13,19 @@ from .test_backend_mixin import BackendTestCase
 # Hide over verbose boto3 logging
 logging.getLogger("boto3").setLevel(logging.WARNING)
 logging.getLogger("botocore").setLevel(logging.WARNING)
+
+
+class ReadOnlyStream(io.RawIOBase):
+    """A stream that can only be read forward, like a reassembled chunked upload."""
+
+    def __init__(self, content):
+        self.content = io.BytesIO(content)
+
+    def readable(self):
+        return True
+
+    def readinto(self, target):
+        return self.content.readinto(target)
 
 
 S3_SERVER = "http://localhost:9000"
@@ -60,6 +74,30 @@ class S3BackendTest(BackendTestCase):
             return True
         except ClientError:
             return False
+
+    def test_save_sets_content_type(self, faker, utils):
+        self.backend.save(utils.file(faker.binary()), "test.csv")
+
+        assert self.bucket.Object("test.csv").content_type == "text/csv"
+
+    def test_save_large_file(self):
+        # Over the 8MB multipart threshold of boto3.
+        content = b"0123456789" * (1024 * 1024)
+
+        self.backend.save(io.BytesIO(content), "large.bin")
+
+        self.assert_bin_equal("large.bin", content)
+        # A multipart ETag is a digest of digests suffixed with the part count.
+        # Without this, nothing would tell the upload took the multipart path
+        # rather than being buffered into a single PUT.
+        assert "-" in self.bucket.Object("large.bin").e_tag
+
+    def test_save_stream_that_cannot_seek(self, faker):
+        content = faker.binary()
+
+        self.backend.save(ReadOnlyStream(content), "stream.bin")
+
+        self.assert_bin_equal("stream.bin", content)
 
     # def test_root(self):
     #     self.assertEqual(self.backend.root, self.test_dir)

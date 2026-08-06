@@ -73,10 +73,21 @@ class S3Backend(BaseBackend):
         return obj["Body"].read()
 
     def write(self, filename, content):
-        extra_args = self.get_object_extra_args()
-        if content_type := mimetypes.guess_type(filename)[0]:
-            extra_args["ContentType"] = content_type
-        return self.bucket.put_object(Key=filename, Body=self.as_binary(content), **extra_args)
+        return self.bucket.put_object(
+            Key=filename, Body=self.as_binary(content), **self.get_object_extra_args(filename)
+        )
+
+    def save(self, file_or_wfs, filename):
+        # Unlike the base implementation, which reads the file into a single
+        # `bytes` before a lone PUT, `upload_fileobj` consumes the file object
+        # by blocks and switches to a multipart upload past its threshold: the
+        # content is never held whole in memory, and the 5GB limit of a single
+        # PUT does not apply. The file object only needs `read()`, so a stream
+        # that cannot seek back (a reassembled chunked upload) is fine.
+        self.bucket.upload_fileobj(
+            file_or_wfs, filename, ExtraArgs=self.get_object_extra_args(filename)
+        )
+        return filename
 
     def delete(self, filename):
         # Delete the exact object...
@@ -115,10 +126,15 @@ class S3Backend(BaseBackend):
         with self.open(filename, mode="rb") as f:
             return send_file(f, self.get_metadata(filename)["mime"])
 
-    def get_object_extra_args(self):
+    def get_object_extra_args(self, filename=None):
         # Build extra args for options present in config
-        return {
+        extra_args = {
             arg_name: self.config[config_key]
             for config_key, arg_name in self._S3_OBJECT_OPTION_MAP.items()
             if config_key in self.config
         }
+        # S3 stores the content type with the object and serves it back as-is,
+        # so it has to be set at write time; it defaults to binary/octet-stream.
+        if filename and (content_type := mimetypes.guess_type(filename)[0]):
+            extra_args["ContentType"] = content_type
+        return extra_args
