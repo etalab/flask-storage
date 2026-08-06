@@ -13,6 +13,25 @@ from . import BaseBackend
 log = logging.getLogger(__name__)
 
 
+class NonClosingProxy:
+    """Expose a file object to a consumer that must not close it.
+
+    `upload_fileobj` closes the file object it is handed once the transfer is
+    over, which would close the caller's file: storing a file has never been
+    expected to consume it. Everything but `close` goes through, so whether the
+    file can seek — which decides how the transfer reads it — is unchanged.
+    """
+
+    def __init__(self, fileobj):
+        self.fileobj = fileobj
+
+    def __getattr__(self, name):
+        return getattr(self.fileobj, name)
+
+    def close(self):
+        pass
+
+
 class S3Backend(BaseBackend):
     """
     An Amazon S3 Backend (compatible with any S3-like API)
@@ -85,7 +104,7 @@ class S3Backend(BaseBackend):
         # PUT does not apply. The file object only needs `read()`, so a stream
         # that cannot seek back (a reassembled chunked upload) is fine.
         self.bucket.upload_fileobj(
-            file_or_wfs, filename, ExtraArgs=self.get_object_extra_args(filename)
+            NonClosingProxy(file_or_wfs), filename, ExtraArgs=self.get_object_extra_args(filename)
         )
         return filename
 
