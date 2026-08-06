@@ -85,7 +85,7 @@ class S3Backend(BaseBackend):
         else:  # mode == 'w'
             f = io.BytesIO() if "b" in mode else io.StringIO()
             yield f
-            obj.put(Body=f.getvalue(), **self.get_object_extra_args())
+            obj.put(Body=f.getvalue(), **self.get_object_extra_args(filename))
 
     def read(self, filename):
         obj = self.bucket.Object(filename).get()
@@ -100,9 +100,10 @@ class S3Backend(BaseBackend):
         # Unlike the base implementation, which reads the file into a single
         # `bytes` before a lone PUT, `upload_fileobj` consumes the file object
         # by blocks and switches to a multipart upload past its threshold: the
-        # content is never held whole in memory, and the 5GB limit of a single
-        # PUT does not apply. The file object only needs `read()`, so a stream
-        # that cannot seek back (a reassembled chunked upload) is fine.
+        # memory it holds is bounded by the parts in flight instead of growing
+        # with the file, and the 5GB limit of a single PUT does not apply. The
+        # file object only needs `read()`, so a stream that cannot seek back
+        # (a reassembled chunked upload) is fine.
         self.bucket.upload_fileobj(
             NonClosingProxy(file_or_wfs), filename, ExtraArgs=self.get_object_extra_args(filename)
         )
@@ -132,20 +133,31 @@ class S3Backend(BaseBackend):
     def get_metadata(self, filename):
         """Fetch all availabe metadata"""
         obj = self.bucket.Object(filename)
-        checksum = "md5:{0}".format(obj.e_tag[1:-1])
         mime = obj.content_type.split(";", 1)[0] if obj.content_type else None
         return {
-            "checksum": checksum,
+            "checksum": self.get_checksum(obj),
             "size": obj.content_length,
             "mime": mime,
             "modified": obj.last_modified,
         }
 
+    def get_checksum(self, obj):
+        """The MD5 of an object, when S3 happens to expose one.
+
+        An object uploaded in several parts has a digest of its parts' digests
+        as ETag, suffixed with the part count — not a digest of its content.
+        There is no way to get the real one back short of downloading the whole
+        object, so `None` is returned rather than a wrong checksum: whoever
+        wrote the file is the only one in position to have digested it.
+        """
+        etag = obj.e_tag.strip('"')
+        return None if "-" in etag else "md5:{0}".format(etag)
+
     def serve(self, filename):
         with self.open(filename, mode="rb") as f:
             return send_file(f, self.get_metadata(filename)["mime"])
 
-    def get_object_extra_args(self, filename=None):
+    def get_object_extra_args(self, filename):
         # Build extra args for options present in config
         extra_args = {
             arg_name: self.config[config_key]
@@ -154,6 +166,6 @@ class S3Backend(BaseBackend):
         }
         # S3 stores the content type with the object and serves it back as-is,
         # so it has to be set at write time; it defaults to binary/octet-stream.
-        if filename and (content_type := mimetypes.guess_type(filename)[0]):
+        if content_type := mimetypes.guess_type(filename)[0]:
             extra_args["ContentType"] = content_type
         return extra_args

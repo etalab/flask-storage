@@ -99,6 +99,14 @@ class S3BackendTest(BackendTestCase):
 
         self.assert_bin_equal("stream.bin", content)
 
+    def test_metadata_of_a_multipart_upload_has_no_checksum(self, app):
+        # The ETag of a multipart object digests the parts' digests, not the
+        # content: there is no MD5 to report, and reporting the ETag as one
+        # would hand out a checksum that does not match the file.
+        self.backend.save(io.BytesIO(b"0123456789" * (1024 * 1024)), "large.bin")
+
+        assert self.backend.metadata("large.bin")["checksum"] is None
+
     # def test_root(self):
     #     self.assertEqual(self.backend.root, self.test_dir)
 

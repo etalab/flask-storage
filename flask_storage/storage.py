@@ -364,7 +364,9 @@ class Storage:
         Can vary from a backend to another but some are always present:
         - `filename`: the base filename (without the path/prefix)
         - `url`: the file public URL
-        - `checksum`: a checksum expressed in the form `algo:hash`
+        - `checksum`: a checksum expressed in the form `algo:hash`, or `None`
+          when the backend has none to offer (an object stored in several
+          parts on S3 has no digest of its whole content)
         - 'mime': the mime type
         - `modified`: the last modification date
         """
