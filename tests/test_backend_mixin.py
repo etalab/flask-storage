@@ -180,6 +180,21 @@ class BackendTestCase:
 
         self.assert_text_equal(filename, content)
 
+    def test_save_leaves_the_file_open(self, faker, utils):
+        # `ImageReference.save` stores the same file object several times,
+        # seeking back to its start in between: a save that consumed the
+        # caller's file would break thumbnail generation.
+        content = faker.binary()
+        f = utils.file(content)
+
+        self.backend.save(f, "first.bin")
+        f.seek(0)
+        self.backend.save(f, "second.bin")
+
+        assert not f.closed
+        self.assert_bin_equal("first.bin", content)
+        self.assert_bin_equal("second.bin", content)
+
     def test_list_files(self, faker, utils):
         files = set(["first.test", "second.test", "some/path/to/third.test"])
         for f in files:

@@ -67,6 +67,11 @@ class BaseBackend:
         """
         Save a file-like object or a `werkzeug.FileStorage` with the specified filename.
 
+        Backends only read from the file object: they leave it open and its
+        position free for the caller to reuse. `ImageReference.save` relies on
+        it to store an image and each of its thumbnails from a single upload,
+        so a backend that consumes the file it is handed is considered broken.
+
         :param storage: The file or the storage to be saved.
         :param filename: The destination in the storage.
         :param overwrite: if `False`, raise an exception if file exists in storage

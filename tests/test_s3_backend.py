@@ -80,6 +80,14 @@ class S3BackendTest(BackendTestCase):
 
         assert self.bucket.Object("test.csv").content_type == "text/csv"
 
+    def test_open_write_sets_content_type(self, faker):
+        # S3 serves back the content type stored with the object, so every
+        # write path has to set it, not just `save()`.
+        with self.backend.open("test.csv", "w") as f:
+            f.write(faker.sentence())
+
+        assert self.bucket.Object("test.csv").content_type == "text/csv"
+
     def test_save_large_file(self):
         # Over the 8MB multipart threshold of boto3.
         content = b"0123456789" * (1024 * 1024)
@@ -98,21 +106,6 @@ class S3BackendTest(BackendTestCase):
         self.backend.save(ReadOnlyStream(content), "stream.bin")
 
         self.assert_bin_equal("stream.bin", content)
-
-    def test_save_leaves_the_file_open(self, faker, utils):
-        # ImageField stores the same file object several times, seeking back to
-        # its start in between (flask_storage/mongo.py:143-155): a save that
-        # consumed the caller's file would break thumbnail generation.
-        content = faker.binary()
-        f = utils.file(content)
-
-        self.backend.save(f, "first.bin")
-        f.seek(0)
-        self.backend.save(f, "second.bin")
-
-        assert not f.closed
-        self.assert_bin_equal("first.bin", content)
-        self.assert_bin_equal("second.bin", content)
 
     def test_metadata_of_a_multipart_upload_has_no_checksum(self):
         # The ETag of a multipart object digests the parts' digests, not the

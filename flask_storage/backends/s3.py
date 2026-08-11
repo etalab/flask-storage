@@ -18,8 +18,8 @@ class NonClosingProxy:
     """Expose a file object to a consumer that must not close it.
 
     `upload_fileobj` closes the file object it is handed once the transfer is
-    over, which would close the caller's file: storing a file has never been
-    expected to consume it. Everything but `close` goes through, so whether the
+    over, which would close the caller's file and break the contract of
+    `BaseBackend.save`. Everything but `close` goes through, so whether the
     file can seek — which decides how the transfer reads it — is unchanged.
     """
 
@@ -104,6 +104,18 @@ class S3Backend(BaseBackend):
         # with the file, and the 5GB limit of a single PUT does not apply. The
         # file object only needs `read()`, so a stream that cannot seek back
         # (a reassembled chunked upload) is fine.
+        #
+        # Such a stream cannot be measured before being read, though, and boto3
+        # only sizes its parts when it knows the total: they stay at the default
+        # 8MB, and S3 takes at most 10000 of them, so an upload that cannot seek
+        # tops out around 80GB. A seekable file has no such ceiling — boto3
+        # grows the parts to fit.
+        #
+        # Digesting the blocks on their way through would not give the stored
+        # object a checksum either: metadata travels with CreateMultipartUpload,
+        # before the first block is read, and CompleteMultipartUpload takes
+        # none — by the time the digest is known there is nowhere left to put
+        # it. A caller who needs one has to compute it on its side.
         self.bucket.upload_fileobj(
             NonClosingProxy(file_or_wfs), filename, ExtraArgs=self.get_object_extra_args(filename)
         )
