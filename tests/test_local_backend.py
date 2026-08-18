@@ -1,3 +1,4 @@
+import hashlib
 import os
 
 import pytest
@@ -9,7 +10,8 @@ from .test_backend_mixin import BackendTestCase
 
 
 class LocalBackendTest(BackendTestCase):
-    hasher = "sha1"
+    def expected_checksum(self, content):
+        return "sha1:{0}".format(hashlib.sha1(content).hexdigest())
 
     @pytest.fixture(autouse=True)
     def setup(self, tmpdir):

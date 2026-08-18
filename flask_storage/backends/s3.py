@@ -1,3 +1,4 @@
+import base64
 import codecs
 import io
 import logging
@@ -64,6 +65,7 @@ class S3Backend(BaseBackend):
             aws_access_key_id=config.access_key,
             aws_secret_access_key=config.secret_key,
         )
+        self.client = self.s3.meta.client
         self.bucket = self.s3.Bucket(config.get("bucket_name") or name)
 
         if not self.bucket.creation_date:
@@ -111,14 +113,14 @@ class S3Backend(BaseBackend):
         # tops out around 80GB. A seekable file has no such ceiling — boto3
         # grows the parts to fit.
         #
-        # Digesting the blocks on their way through would not give the stored
-        # object a checksum either: metadata travels with CreateMultipartUpload,
-        # before the first block is read, and CompleteMultipartUpload takes
-        # none — by the time the digest is known there is nowhere left to put
-        # it. A caller who needs one has to compute it on its side.
-        self.bucket.upload_fileobj(
-            NonClosingProxy(file_or_wfs), filename, ExtraArgs=self.get_object_extra_args(filename)
-        )
+        # `ChecksumType` is set here rather than with the other write options
+        # because `put_object` rejects it: it only means something to an upload
+        # made of several parts, which by default gets a digest of its parts'
+        # digests. `FULL_OBJECT` asks for a digest of the content instead, so a
+        # file has the same checksum however many parts it travelled in.
+        extra_args = self.get_object_extra_args(filename)
+        extra_args["ChecksumType"] = "FULL_OBJECT"
+        self.bucket.upload_fileobj(NonClosingProxy(file_or_wfs), filename, ExtraArgs=extra_args)
         return filename
 
     def delete(self, filename):
@@ -144,21 +146,41 @@ class S3Backend(BaseBackend):
 
     def get_metadata(self, filename):
         """Fetch all availabe metadata"""
-        obj = self.bucket.Object(filename)
-        mime = obj.content_type.split(";", 1)[0] if obj.content_type else None
-        # An object uploaded in several parts has a digest of its parts' digests
-        # as ETag, suffixed with the part count — not a digest of its content.
-        # Short of downloading the whole object there is no way to get the real
-        # one, so report none rather than a checksum that does not match the
-        # file: whoever wrote it is the only one in position to have digested it.
-        etag = obj.e_tag.strip('"')
-        checksum = None if "-" in etag else "md5:{0}".format(etag)
+        # `ChecksumMode` is what makes S3 hand back the checksum it stored with
+        # the object; the resource layer never asks for it.
+        head = self.client.head_object(
+            Bucket=self.bucket.name, Key=filename, ChecksumMode="ENABLED"
+        )
+        content_type = head.get("ContentType")
         return {
-            "checksum": checksum,
-            "size": obj.content_length,
-            "mime": mime,
-            "modified": obj.last_modified,
+            "checksum": self.get_checksum(head),
+            "size": head["ContentLength"],
+            "mime": content_type.split(";", 1)[0] if content_type else None,
+            "modified": head["LastModified"],
         }
+
+    @staticmethod
+    def get_checksum(head):
+        """Read a checksum describing the content out of a HeadObject response."""
+        # A `FULL_OBJECT` checksum digests the content, whether the object was
+        # stored whole or in a hundred parts. A `COMPOSITE` one digests the
+        # parts' digests — like the ETag of a multipart object, suffixed with
+        # the part count — and says nothing about the content, so it is worth
+        # no more than no checksum at all.
+        if head.get("ChecksumType") == "FULL_OBJECT" and (crc32 := head.get("ChecksumCRC32")):
+            return "crc32:{0}".format(base64.b64decode(crc32).hex())
+        # Objects written before a full-object checksum was asked for only have
+        # their ETag, which digests the content when it was stored in one part.
+        etag = head["ETag"].strip('"')
+        if "-" not in etag:
+            return "md5:{0}".format(etag)
+        # A multipart ETag digests the parts' digests, so it describes how the
+        # object was uploaded rather than what it contains. rclone, which wrote
+        # the objects migrated from the local storage, stores the MD5 of the
+        # whole file under this header for exactly that reason.
+        if md5 := head.get("Metadata", {}).get("md5chksum"):
+            return "md5:{0}".format(base64.b64decode(md5).hex())
+        return None
 
     def serve(self, filename):
         with self.open(filename, mode="rb") as f:
@@ -175,4 +197,10 @@ class S3Backend(BaseBackend):
         # so it has to be set at write time; it defaults to binary/octet-stream.
         if content_type := files.mime(filename):
             extra_args["ContentType"] = content_type
+        # Have S3 checksum what it receives and store the result with the
+        # object, so a corrupted transfer is rejected instead of being stored,
+        # and `get_metadata` has a digest of the content to report. CRC32 is
+        # not a cryptographic digest, but it is the widest algorithm S3 accepts
+        # for a whole object: SHA-256 digests can only be combined part by part.
+        extra_args["ChecksumAlgorithm"] = "CRC32"
         return extra_args

@@ -1,4 +1,3 @@
-import hashlib
 from datetime import datetime
 
 
@@ -7,6 +6,14 @@ class BackendTestCase:
         if isinstance(content, str):
             content = content.encode("utf-8")
         return content
+
+    def expected_checksum(self, content):
+        """The `algo:hash` this backend is expected to report for `content`.
+
+        Backends do not all digest with the same algorithm: each reports what
+        its storage can vouch for.
+        """
+        raise NotImplementedError("You must implement this method")
 
     def put_file(self, filename, content):
         raise NotImplementedError("You must implement this method")
@@ -214,12 +221,10 @@ class BackendTestCase:
 
     def test_metadata(self, app, faker):
         content = faker.sentence()
-        hasher = getattr(hashlib, self.hasher)
-        hashed = hasher(content.encode("utf8")).hexdigest()
         self.put_file("file.txt", content)
 
         metadata = self.backend.metadata("file.txt")
-        assert metadata["checksum"] == "{0}:{1}".format(self.hasher, hashed)
+        assert metadata["checksum"] == self.expected_checksum(content.encode("utf8"))
         assert metadata["size"] == len(content)
         assert metadata["mime"] in ("text/plain", "binary/octet-stream")
         assert isinstance(metadata["modified"], datetime)

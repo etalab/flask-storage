@@ -9,8 +9,8 @@ services:
   s3:
     image: minio/minio
     environment:
-      MINIO_ACCESS_KEY: ABCDEFGHIJKLMNOQRSTU
-      MINIO_SECRET_KEY: abcdefghiklmnoqrstuvwxyz1234567890abcdef
+      MINIO_ROOT_USER: ABCDEFGHIJKLMNOQRSTU
+      MINIO_ROOT_PASSWORD: abcdefghiklmnoqrstuvwxyz1234567890abcdef
     command: server /export
     ports:
       - "9000:9000"
