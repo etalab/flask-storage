@@ -173,9 +173,7 @@ class S3BackendTest(BackendTestCase):
         )
 
         assert "-" in self.bucket.Object("migrated.bin").e_tag
-        assert self.backend.metadata("migrated.bin")["checksum"] == "md5:{0}".format(
-            digest.hex()
-        )
+        assert self.backend.metadata("migrated.bin")["checksum"] == "md5:{0}".format(digest.hex())
 
     def test_a_corrupted_part_is_rejected_rather_than_stored(self):
         # What makes the stored checksum worth reporting: S3 digests what it
