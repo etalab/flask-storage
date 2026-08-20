@@ -1,8 +1,9 @@
 import base64
+import binascii
 import codecs
 import io
 import logging
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 
 import boto3
 from botocore.exceptions import ClientError
@@ -21,7 +22,7 @@ class NonClosingProxy:
     `upload_fileobj` closes the file object it is handed once the transfer is
     over, which would close the caller's file and break the contract of
     `BaseBackend.save`. Everything but `close` goes through, so whether the
-    file can seek — which decides how the transfer reads it — is unchanged.
+    file can seek (which decides how the transfer reads it) is unchanged.
     """
 
     def __init__(self, fileobj):
@@ -110,7 +111,7 @@ class S3Backend(BaseBackend):
         # Such a stream cannot be measured before being read, though, and boto3
         # only sizes its parts when it knows the total: they stay at the default
         # 8MB, and S3 takes at most 10000 of them, so an upload that cannot seek
-        # tops out around 80GB. A seekable file has no such ceiling — boto3
+        # tops out around 80GB. A seekable file has no such ceiling: boto3
         # grows the parts to fit.
         #
         # `ChecksumType` is set here rather than with the other write options
@@ -164,8 +165,8 @@ class S3Backend(BaseBackend):
         """Read a checksum describing the content out of a HeadObject response."""
         # A `FULL_OBJECT` checksum digests the content, whether the object was
         # stored whole or in a hundred parts. A `COMPOSITE` one digests the
-        # parts' digests — like the ETag of a multipart object, suffixed with
-        # the part count — and says nothing about the content, so it is worth
+        # parts' digests (like the ETag of a multipart object, suffixed with
+        # the part count) and says nothing about the content, so it is worth
         # no more than no checksum at all.
         if head.get("ChecksumType") == "FULL_OBJECT" and (crc32 := head.get("ChecksumCRC32")):
             return "crc32:{0}".format(base64.b64decode(crc32).hex())
@@ -175,11 +176,17 @@ class S3Backend(BaseBackend):
         if "-" not in etag:
             return "md5:{0}".format(etag)
         # A multipart ETag digests the parts' digests, so it describes how the
-        # object was uploaded rather than what it contains. rclone, which wrote
-        # the objects migrated from the local storage, stores the MD5 of the
-        # whole file under this header for exactly that reason.
+        # object was uploaded rather than what it contains. rclone stores the
+        # MD5 of the whole file under this metadata key for exactly that reason,
+        # so an object it copied still has a usable checksum. S3 knows nothing
+        # about that key: it keeps it as-is, without computing or checking it,
+        # so whatever comes out of it has to look like an MD5 before we report
+        # it as one.
         if md5 := head.get("Metadata", {}).get("md5chksum"):
-            return "md5:{0}".format(base64.b64decode(md5).hex())
+            with suppress(binascii.Error):
+                digest = base64.b64decode(md5, validate=True)
+                if len(digest) == 16:
+                    return "md5:{0}".format(digest.hex())
         return None
 
     def serve(self, filename):

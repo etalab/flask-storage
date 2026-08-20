@@ -145,6 +145,27 @@ class S3BackendTest(BackendTestCase):
             "md5:e2fc714c4727ee9395f324cd2e7f331f"
         )
 
+    def store_in_parts(self, key, content, metadata=None):
+        """Upload without asking for a checksum, the way an object gets a multipart ETag."""
+        client = self.backend.client
+        upload = client.create_multipart_upload(
+            Bucket=self.bucket.name, Key=key, Metadata=metadata or {}
+        )
+        part = client.upload_part(
+            Bucket=self.bucket.name,
+            Key=key,
+            UploadId=upload["UploadId"],
+            PartNumber=1,
+            Body=content,
+        )
+        client.complete_multipart_upload(
+            Bucket=self.bucket.name,
+            Key=key,
+            UploadId=upload["UploadId"],
+            MultipartUpload={"Parts": [{"PartNumber": 1, "ETag": part["ETag"]}]},
+        )
+        assert "-" in self.bucket.Object(key).e_tag
+
     def test_metadata_checksum_of_an_object_migrated_by_rclone(self):
         # rclone attaches the MD5 of the whole file under this header when it
         # uploads in parts, precisely because the ETag stops being one. It is
@@ -152,28 +173,26 @@ class S3BackendTest(BackendTestCase):
         # storage, which nothing else can digest short of downloading them.
         content = b"0123456789" * (1024 * 1024)
         digest = hashlib.md5(content).digest()
-        client = self.backend.client
-        upload = client.create_multipart_upload(
-            Bucket=self.bucket.name,
-            Key="migrated.bin",
-            Metadata={"md5chksum": base64.b64encode(digest).decode()},
-        )
-        part = client.upload_part(
-            Bucket=self.bucket.name,
-            Key="migrated.bin",
-            UploadId=upload["UploadId"],
-            PartNumber=1,
-            Body=content,
-        )
-        client.complete_multipart_upload(
-            Bucket=self.bucket.name,
-            Key="migrated.bin",
-            UploadId=upload["UploadId"],
-            MultipartUpload={"Parts": [{"PartNumber": 1, "ETag": part["ETag"]}]},
+
+        self.store_in_parts(
+            "migrated.bin", content, {"md5chksum": base64.b64encode(digest).decode()}
         )
 
-        assert "-" in self.bucket.Object("migrated.bin").e_tag
         assert self.backend.metadata("migrated.bin")["checksum"] == "md5:{0}".format(digest.hex())
+
+    def test_metadata_of_an_object_with_no_checksum_to_offer(self):
+        # S3 keeps `md5chksum` as opaque user metadata, without computing or
+        # checking it, so a value that is not an MD5 is worth no more than an
+        # absent one: neither can be reported as a checksum of the content.
+        self.store_in_parts("no-metadata.bin", b"first")
+        self.store_in_parts("not-base64.bin", b"second", {"md5chksum": "not-an-md5"})
+        self.store_in_parts(
+            "wrong-length.bin", b"third", {"md5chksum": base64.b64encode(b"short").decode()}
+        )
+
+        assert self.backend.metadata("no-metadata.bin")["checksum"] is None
+        assert self.backend.metadata("not-base64.bin")["checksum"] is None
+        assert self.backend.metadata("wrong-length.bin")["checksum"] is None
 
     def test_a_corrupted_part_is_rejected_rather_than_stored(self):
         # What makes the stored checksum worth reporting: S3 digests what it
@@ -196,7 +215,9 @@ class S3BackendTest(BackendTestCase):
                 ChecksumCRC32=base64.b64encode(b"\x00\x00\x00\x00").decode(),
             )
 
-        assert excinfo.value.response["Error"]["Code"] == "BadDigest"
+        # Only the rejection matters, not how an implementation names it: MinIO
+        # answers XAmzContentChecksumMismatch where OVH answers BadDigest.
+        assert excinfo.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
 
     # def test_root(self):
     #     self.assertEqual(self.backend.root, self.test_dir)
