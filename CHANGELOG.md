@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.0.0 (2026-08-20)
+
+- **feat(s3)!: stream uploads with upload_fileobj for S3 instead of a single PUT and remove fake checksum returned ([#24](https://github.com/etalab/flask-storage/pull/24))**
+  `save()` used to read the whole file in memory before a single PUT, so
+  an upload was bounded by the RAM of the worker and by the 5GB limit of a
+  PUT. It now goes through `upload_fileobj`, which reads the file by
+  blocks and switches to a multipart upload past 8MB.
+  
+  It also asks S3 to checksum what it receives, so a corrupted transfer is
+  rejected and `metadata()` still reports a digest of the content whatever
+  the number of parts it travelled in. It's a CRC32, the only algorithm S3
+  combines over a whole object. `checksum` is `None` only for objects
+  written before this.
+  
+  Checked against the OVH bucket: a 12MB upload comes back with
+  `ChecksumType: FULL_OBJECT` and its CRC32, and a wrong digest is
+  rejected with `BadDigest`.
+
+
 ## 1.4.6 (2026-08-05)
 
 - fix: do not deep copy the storage when mongoengine copies a FileField ([#23](https://github.com/etalab/flask-storage/pull/23))
