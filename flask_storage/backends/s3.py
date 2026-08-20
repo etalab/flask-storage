@@ -105,14 +105,15 @@ class S3Backend(BaseBackend):
         # by blocks and switches to a multipart upload past its threshold: the
         # memory it holds is bounded by the parts in flight instead of growing
         # with the file, and the 5GB limit of a single PUT does not apply. The
-        # file object only needs `read()`, so a stream that cannot seek back
-        # (a reassembled chunked upload) is fine.
+        # file object only needs `read()`, so a stream that cannot seek back is
+        # fine, whether it is reassembled, piped or wrapped by the caller.
         #
-        # Such a stream cannot be measured before being read, though, and boto3
-        # only sizes its parts when it knows the total: they stay at the default
-        # 8MB, and S3 takes at most 10000 of them, so an upload that cannot seek
-        # tops out around 80GB. A seekable file has no such ceiling: boto3
-        # grows the parts to fit.
+        # What it costs is the size of the parts: boto3 only sizes them when it
+        # can measure the file, which it does by seeking. A stream it cannot
+        # seek keeps them at the default 8MB, and S3 takes at most 10000 of
+        # them, so such an upload tops out around 80GB. It is worth knowing
+        # that a wrapper exposing nothing but `read()` around an otherwise
+        # seekable file lowers that ceiling onto it.
         #
         # `ChecksumType` is set here rather than with the other write options
         # because `put_object` rejects it: it only means something to an upload
