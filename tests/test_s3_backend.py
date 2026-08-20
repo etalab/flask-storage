@@ -1,4 +1,8 @@
+import base64
+import hashlib
+import io
 import logging
+import zlib
 
 import boto3
 import pytest
@@ -14,6 +18,19 @@ logging.getLogger("boto3").setLevel(logging.WARNING)
 logging.getLogger("botocore").setLevel(logging.WARNING)
 
 
+class ReadOnlyStream(io.RawIOBase):
+    """A stream that can only be read forward, like a reassembled chunked upload."""
+
+    def __init__(self, content):
+        self.content = io.BytesIO(content)
+
+    def readable(self):
+        return True
+
+    def readinto(self, target):
+        return self.content.readinto(target)
+
+
 S3_SERVER = "http://localhost:9000"
 S3_REGION = "us-east-1"
 S3_ACCESS_KEY = "ABCDEFGHIJKLMNOQRSTU"
@@ -21,7 +38,8 @@ S3_SECRET_KEY = "abcdefghiklmnoqrstuvwxyz1234567890abcdef"
 
 
 class S3BackendTest(BackendTestCase):
-    hasher = "md5"
+    def expected_checksum(self, content):
+        return "crc32:{0}".format(format(zlib.crc32(content), "08x"))
 
     @pytest.fixture(autouse=True)
     def setup(self):
@@ -60,6 +78,146 @@ class S3BackendTest(BackendTestCase):
             return True
         except ClientError:
             return False
+
+    def test_save_sets_content_type(self, faker, utils):
+        self.backend.save(utils.file(faker.binary()), "test.csv")
+
+        assert self.bucket.Object("test.csv").content_type == "text/csv"
+
+    def test_open_write_sets_content_type(self, faker):
+        # S3 serves back the content type stored with the object, so every
+        # write path has to set it, not just `save()`.
+        with self.backend.open("test.csv", "w") as f:
+            f.write(faker.sentence())
+
+        assert self.bucket.Object("test.csv").content_type == "text/csv"
+
+    def test_save_large_file(self):
+        # Over the 8MB multipart threshold of boto3.
+        content = b"0123456789" * (1024 * 1024)
+
+        self.backend.save(io.BytesIO(content), "large.bin")
+
+        self.assert_bin_equal("large.bin", content)
+        # A multipart ETag is a digest of digests suffixed with the part count.
+        # Without this, nothing would tell the upload took the multipart path
+        # rather than being buffered into a single PUT.
+        assert "-" in self.bucket.Object("large.bin").e_tag
+
+    def test_save_stream_that_cannot_seek(self, faker):
+        content = faker.binary()
+
+        self.backend.save(ReadOnlyStream(content), "stream.bin")
+
+        self.assert_bin_equal("stream.bin", content)
+
+    def test_metadata_checksum_does_not_depend_on_the_number_of_parts(self):
+        # The point of asking S3 for a full-object checksum: the same content
+        # gets the same checksum whether it was stored whole or in parts. The
+        # ETag, which digests the parts' digests, does not have this property.
+        content = b"0123456789" * (1024 * 1024)
+
+        self.backend.save(io.BytesIO(content), "multipart.bin")
+        self.bucket.put_object(Key="whole.bin", Body=content, ChecksumAlgorithm="CRC32")
+
+        assert "-" in self.bucket.Object("multipart.bin").e_tag  # took the multipart path
+        assert "-" not in self.bucket.Object("whole.bin").e_tag
+        assert self.backend.metadata("multipart.bin")["checksum"] == self.expected_checksum(content)
+        assert self.backend.metadata("whole.bin")["checksum"] == self.expected_checksum(content)
+
+    def test_metadata_checksum_of_an_object_stored_without_one(self):
+        # Objects written before a full-object checksum was asked for only have
+        # their ETag to offer, and it only digests the content of an object
+        # stored in one part.
+        client = self.session.client(
+            "s3",
+            config=boto3.session.Config(
+                signature_version="s3v4", request_checksum_calculation="when_required"
+            ),
+            endpoint_url=S3_SERVER,
+            region_name=S3_REGION,
+            aws_access_key_id=S3_ACCESS_KEY,
+            aws_secret_access_key=S3_SECRET_KEY,
+        )
+        client.put_object(Bucket=self.bucket.name, Key="legacy.bin", Body=b"abcd")
+
+        assert self.backend.metadata("legacy.bin")["checksum"] == (
+            "md5:e2fc714c4727ee9395f324cd2e7f331f"
+        )
+
+    def store_in_parts(self, key, content, metadata=None):
+        """Upload without asking for a checksum, the way an object gets a multipart ETag."""
+        client = self.backend.client
+        upload = client.create_multipart_upload(
+            Bucket=self.bucket.name, Key=key, Metadata=metadata or {}
+        )
+        part = client.upload_part(
+            Bucket=self.bucket.name,
+            Key=key,
+            UploadId=upload["UploadId"],
+            PartNumber=1,
+            Body=content,
+        )
+        client.complete_multipart_upload(
+            Bucket=self.bucket.name,
+            Key=key,
+            UploadId=upload["UploadId"],
+            MultipartUpload={"Parts": [{"PartNumber": 1, "ETag": part["ETag"]}]},
+        )
+        assert "-" in self.bucket.Object(key).e_tag
+
+    def test_metadata_checksum_of_an_object_migrated_by_rclone(self):
+        # rclone attaches the MD5 of the whole file under this header when it
+        # uploads in parts, precisely because the ETag stops being one. It is
+        # what keeps a usable checksum on the objects migrated from the local
+        # storage, which nothing else can digest short of downloading them.
+        content = b"0123456789" * (1024 * 1024)
+        digest = hashlib.md5(content).digest()
+
+        self.store_in_parts(
+            "migrated.bin", content, {"md5chksum": base64.b64encode(digest).decode()}
+        )
+
+        assert self.backend.metadata("migrated.bin")["checksum"] == "md5:{0}".format(digest.hex())
+
+    def test_metadata_of_an_object_with_no_checksum_to_offer(self):
+        # S3 keeps `md5chksum` as opaque user metadata, without computing or
+        # checking it, so a value that is not an MD5 is worth no more than an
+        # absent one: neither can be reported as a checksum of the content.
+        self.store_in_parts("no-metadata.bin", b"first")
+        self.store_in_parts("not-base64.bin", b"second", {"md5chksum": "not-an-md5"})
+        self.store_in_parts(
+            "wrong-length.bin", b"third", {"md5chksum": base64.b64encode(b"short").decode()}
+        )
+
+        assert self.backend.metadata("no-metadata.bin")["checksum"] is None
+        assert self.backend.metadata("not-base64.bin")["checksum"] is None
+        assert self.backend.metadata("wrong-length.bin")["checksum"] is None
+
+    def test_a_corrupted_part_is_rejected_rather_than_stored(self):
+        # What makes the stored checksum worth reporting: S3 digests what it
+        # receives on its side and refuses the upload when it does not match.
+        client = self.backend.client
+        upload = client.create_multipart_upload(
+            Bucket=self.bucket.name,
+            Key="corrupt.bin",
+            ChecksumAlgorithm="CRC32",
+            ChecksumType="FULL_OBJECT",
+        )
+
+        with pytest.raises(ClientError) as excinfo:
+            client.upload_part(
+                Bucket=self.bucket.name,
+                Key="corrupt.bin",
+                UploadId=upload["UploadId"],
+                PartNumber=1,
+                Body=b"0123456789",
+                ChecksumCRC32=base64.b64encode(b"\x00\x00\x00\x00").decode(),
+            )
+
+        # Only the rejection matters, not how an implementation names it: MinIO
+        # answers XAmzContentChecksumMismatch where OVH answers BadDigest.
+        assert excinfo.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
 
     # def test_root(self):
     #     self.assertEqual(self.backend.root, self.test_dir)

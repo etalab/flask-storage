@@ -364,7 +364,12 @@ class Storage:
         Can vary from a backend to another but some are always present:
         - `filename`: the base filename (without the path/prefix)
         - `url`: the file public URL
-        - `checksum`: a checksum expressed in the form `algo:hash`
+        - `checksum`: a checksum of the content, expressed in the form
+          `algo:hash`. The algorithm varies from a backend to another, and the
+          checksum is `None` when the backend has none to offer (an S3 object
+          written before the backend started asking for one). On S3 it can also
+          come from the `md5chksum` metadata rclone writes when it uploads a
+          file in several parts, which S3 stores as-is without verifying it
         - 'mime': the mime type
         - `modified`: the last modification date
         """

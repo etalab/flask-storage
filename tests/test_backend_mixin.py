@@ -1,4 +1,3 @@
-import hashlib
 from datetime import datetime
 
 
@@ -7,6 +6,14 @@ class BackendTestCase:
         if isinstance(content, str):
             content = content.encode("utf-8")
         return content
+
+    def expected_checksum(self, content):
+        """The `algo:hash` this backend is expected to report for `content`.
+
+        Backends do not all digest with the same algorithm: each reports what
+        its storage can vouch for.
+        """
+        raise NotImplementedError("You must implement this method")
 
     def put_file(self, filename, content):
         raise NotImplementedError("You must implement this method")
@@ -180,6 +187,21 @@ class BackendTestCase:
 
         self.assert_text_equal(filename, content)
 
+    def test_save_leaves_the_file_open(self, faker, utils):
+        # `ImageReference.save` stores the same file object several times,
+        # seeking back to its start in between: a save that consumed the
+        # caller's file would break thumbnail generation.
+        content = faker.binary()
+        f = utils.file(content)
+
+        self.backend.save(f, "first.bin")
+        f.seek(0)
+        self.backend.save(f, "second.bin")
+
+        assert not f.closed
+        self.assert_bin_equal("first.bin", content)
+        self.assert_bin_equal("second.bin", content)
+
     def test_list_files(self, faker, utils):
         files = set(["first.test", "second.test", "some/path/to/third.test"])
         for f in files:
@@ -199,12 +221,10 @@ class BackendTestCase:
 
     def test_metadata(self, app, faker):
         content = faker.sentence()
-        hasher = getattr(hashlib, self.hasher)
-        hashed = hasher(content.encode("utf8")).hexdigest()
         self.put_file("file.txt", content)
 
         metadata = self.backend.metadata("file.txt")
-        assert metadata["checksum"] == "{0}:{1}".format(self.hasher, hashed)
+        assert metadata["checksum"] == self.expected_checksum(content.encode("utf8"))
         assert metadata["size"] == len(content)
         assert metadata["mime"] in ("text/plain", "binary/octet-stream")
         assert isinstance(metadata["modified"], datetime)
