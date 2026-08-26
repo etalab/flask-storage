@@ -6,6 +6,7 @@ import logging
 from contextlib import contextmanager, suppress
 
 import boto3
+from boto3.s3.transfer import TransferConfig
 from botocore.exceptions import ClientError
 from flask import send_file
 
@@ -120,9 +121,23 @@ class S3Backend(BaseBackend):
         # made of several parts, which by default gets a digest of its parts'
         # digests. `FULL_OBJECT` asks for a digest of the content instead, so a
         # file has the same checksum however many parts it travelled in.
+        #
+        # `use_threads` is off because a transfer otherwise builds a pool of a
+        # dozen threads for itself: ten to make the requests, five to submit
+        # them and one for the I/O. A caller serving a web request pays that per
+        # upload and gains little, since the parts are read one after the other
+        # from a single stream anyway, and a host short on memory to map their
+        # stacks fails the upload outright with "can't start new thread". The
+        # transfer is otherwise unchanged: only the executor differs, the
+        # multipart logic and its bounded memory are the same.
         extra_args = self.get_object_extra_args(filename)
         extra_args["ChecksumType"] = "FULL_OBJECT"
-        self.bucket.upload_fileobj(NonClosingProxy(file_or_wfs), filename, ExtraArgs=extra_args)
+        self.bucket.upload_fileobj(
+            NonClosingProxy(file_or_wfs),
+            filename,
+            ExtraArgs=extra_args,
+            Config=TransferConfig(use_threads=False),
+        )
         return filename
 
     def delete(self, filename):
