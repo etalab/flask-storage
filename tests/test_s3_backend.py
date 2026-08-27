@@ -2,6 +2,7 @@ import base64
 import hashlib
 import io
 import logging
+import threading
 import zlib
 
 import boto3
@@ -103,6 +104,20 @@ class S3BackendTest(BackendTestCase):
         # Without this, nothing would tell the upload took the multipart path
         # rather than being buffered into a single PUT.
         assert "-" in self.bucket.Object("large.bin").e_tag
+
+    def test_save_when_the_process_cannot_start_a_thread(self, monkeypatch):
+        # A transfer used to build a pool of a dozen threads for itself, so an
+        # upload died with this very error on a host that could not map another
+        # thread stack. Refusing every thread is what that host looked like.
+        def refuse_to_start(self):
+            raise RuntimeError("can't start new thread")
+
+        monkeypatch.setattr(threading.Thread, "start", refuse_to_start)
+        content = b"0123456789" * (1024 * 1024)  # over the 8MB multipart threshold
+
+        self.backend.save(io.BytesIO(content), "no-threads.bin")
+
+        self.assert_bin_equal("no-threads.bin", content)
 
     def test_save_stream_that_cannot_seek(self, faker):
         content = faker.binary()
