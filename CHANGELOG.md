@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.1 (2026-08-27)
+
+- ci: do not run a second pipeline on tags, which raced the branch one to publish ([#26](https://github.com/etalab/flask-storage/pull/26))
+- fix(s3): upload without spawning a thread pool per transfer ([#25](https://github.com/etalab/flask-storage/pull/25))
+
+
 ## 2.0.0 (2026-08-20)
 
 - **feat(s3)!: stream uploads with upload_fileobj for S3 instead of a single PUT and remove fake checksum returned ([#24](https://github.com/etalab/flask-storage/pull/24))**
