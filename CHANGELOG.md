@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.2 (2026-10-06)
+
+- fix: give compressed files the archive mime type instead of their content one ([#27](https://github.com/etalab/flask-storage/pull/27))
+
+
 ## 2.0.1 (2026-08-27)
 
 - ci: do not run a second pipeline on tags, which raced the branch one to publish ([#26](https://github.com/etalab/flask-storage/pull/26))
