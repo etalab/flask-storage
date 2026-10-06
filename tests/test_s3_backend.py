@@ -37,6 +37,13 @@ S3_REGION = "us-east-1"
 S3_ACCESS_KEY = "ABCDEFGHIJKLMNOQRSTU"
 S3_SECRET_KEY = "abcdefghiklmnoqrstuvwxyz1234567890abcdef"
 
+# RustFS, which the tests run against, does not hand back a `FULL_OBJECT`
+# checksum, so `metadata()` falls back to the ETag. OVH does, which is what
+# these tests describe. Strict, so they fail again once RustFS catches up.
+RUSTFS_HAS_NO_FULL_OBJECT_CHECKSUM = pytest.mark.xfail(
+    reason="RustFS does not return FULL_OBJECT checksums", strict=True
+)
+
 
 class S3BackendTest(BackendTestCase):
     def expected_checksum(self, content):
@@ -85,6 +92,11 @@ class S3BackendTest(BackendTestCase):
 
         assert self.bucket.Object("test.csv").content_type == "text/csv"
 
+    def test_save_compressed_file_sets_archive_content_type(self, faker, utils):
+        self.backend.save(utils.file(faker.binary()), "test.csv.gz")
+
+        assert self.bucket.Object("test.csv.gz").content_type == "application/gzip"
+
     def test_open_write_sets_content_type(self, faker):
         # S3 serves back the content type stored with the object, so every
         # write path has to set it, not just `save()`.
@@ -126,6 +138,11 @@ class S3BackendTest(BackendTestCase):
 
         self.assert_bin_equal("stream.bin", content)
 
+    @RUSTFS_HAS_NO_FULL_OBJECT_CHECKSUM
+    def test_metadata(self, app, faker):
+        super().test_metadata(app, faker)
+
+    @RUSTFS_HAS_NO_FULL_OBJECT_CHECKSUM
     def test_metadata_checksum_does_not_depend_on_the_number_of_parts(self):
         # The point of asking S3 for a full-object checksum: the same content
         # gets the same checksum whether it was stored whole or in parts. The

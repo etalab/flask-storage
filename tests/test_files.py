@@ -42,6 +42,22 @@ def test_mime_known_type():
     assert files.mime("test.csv") == "text/csv"
 
 
+def test_mime_compressed_file_is_the_archive_type():
+    assert files.mime("test.csv.gz") == "application/gzip"
+    assert files.mime("test.json.gz") == "application/gzip"
+    assert files.mime("test.gz") == "application/gzip"
+    assert files.mime("test.tar.gz") == "application/gzip"
+    assert files.mime("test.csv.bz2") == "application/x-bzip2"
+    assert files.mime("test.csv.xz") == "application/x-xz"
+    assert files.mime("test.csv.Z") == "application/x-compress"
+
+
+def test_mime_compressed_file_without_media_type_defaults():
+    default = "application/octet-stream"
+    assert files.mime("test.csv.br") is None
+    assert files.mime("test.csv.br", default=default) == default
+
+
 def test_mime_default_to_none():
     assert files.mime("test") is None
     assert files.mime("test", default=None) is None

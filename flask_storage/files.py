@@ -77,11 +77,27 @@ def lower_extension(filename):
     return filename
 
 
+#: What a file compressed as a whole is, keyed by the encodings `mimetypes` knows.
+#: Brotli has no media type of its own, so a `.br` file falls back to the default.
+COMPRESSED_MIMES = {
+    "gzip": "application/gzip",
+    "bzip2": "application/x-bzip2",
+    "xz": "application/x-xz",
+    "compress": "application/x-compress",
+}
+
+
 def mime(filename, default=None):
     """
     A basic helper to guess mime type from a filename or url
     """
-    return mimetypes.guess_type(filename)[0] or default
+    mime_type, encoding = mimetypes.guess_type(filename)
+    # `guess_type` describes `data.csv.gz` as `text/csv` compressed with gzip:
+    # the type of what is inside, not of the file itself. Served as `text/csv`,
+    # a proxy compressing text on the fly would compress it a second time.
+    if encoding:
+        return COMPRESSED_MIMES.get(encoding, default)
+    return mime_type or default
 
 
 class All:
