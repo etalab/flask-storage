@@ -7,10 +7,9 @@ services:
       - "27017:27017"
 
   s3:
-    image: minio/minio
+    image: rustfs/rustfs:1.0.1
     environment:
-      MINIO_ROOT_USER: ABCDEFGHIJKLMNOQRSTU
-      MINIO_ROOT_PASSWORD: abcdefghiklmnoqrstuvwxyz1234567890abcdef
-    command: server /export
+      RUSTFS_ACCESS_KEY: ABCDEFGHIJKLMNOQRSTU
+      RUSTFS_SECRET_KEY: abcdefghiklmnoqrstuvwxyz1234567890abcdef
     ports:
       - "9000:9000"
