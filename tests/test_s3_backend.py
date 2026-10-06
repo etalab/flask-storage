@@ -85,6 +85,11 @@ class S3BackendTest(BackendTestCase):
 
         assert self.bucket.Object("test.csv").content_type == "text/csv"
 
+    def test_save_compressed_file_sets_archive_content_type(self, faker, utils):
+        self.backend.save(utils.file(faker.binary()), "test.csv.gz")
+
+        assert self.bucket.Object("test.csv.gz").content_type == "application/gzip"
+
     def test_open_write_sets_content_type(self, faker):
         # S3 serves back the content type stored with the object, so every
         # write path has to set it, not just `save()`.
