@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.3 (2026-10-07)
+
+- feat(s3): only create missing buckets when CREATE_BUCKET is set, so startup does not depend on S3 ([#28](https://github.com/etalab/flask-storage/pull/28))
+
+
 ## 2.0.2 (2026-10-06)
 
 - fix: give compressed files the archive mime type instead of their content one ([#27](https://github.com/etalab/flask-storage/pull/27))
