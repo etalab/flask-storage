@@ -87,6 +87,7 @@ Here an example configuration with local files storages and s3 images storage:
     FS_S3_ACCESS_KEY = 'ABCDEFGHIJKLMNOQRSTU'
     FS_S3_SECRET_KEY = 'abcdefghiklmnoqrstuvwxyz1234567890abcdef'
     FS_S3_URL = 'https://s3.somewhere.com/'
+    FS_S3_CREATE_BUCKET = True  # optionnal, create missing buckets at startup (development only)
 
     # storage specific configuration
     AVATARS_FS_BACKEND = 's3'
@@ -103,6 +104,11 @@ In this configuration, storages will have the following configuration:
 - ``files``: ``local`` storage served on ``https://files.somewhere.com/``
 - ``avatars``: ``s3`` storage served on ``https://s3.somewhere.com/avatars/``
 - ``images``: ``s3`` storage served on ``https://images.somewhere.com/``
+
+Buckets are expected to exist: the S3 backend makes no request at startup.
+``CREATE_BUCKET`` creates the missing ones instead, which is meant for a
+development S3 started empty. It costs a ``ListBuckets`` request per storage
+when the application starts, which then fails to start if S3 is unavailable.
 
 
 Sharing a single bucket with prefixes

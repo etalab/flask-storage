@@ -46,6 +46,10 @@ class S3Backend(BaseBackend):
     - `region`: The region to work on.
     - `access_key`: The AWS credential access key
     - `secret_key`: The AWS credential secret key
+
+    and optionally:
+
+    - `create_bucket`: Create the bucket at startup if it does not exist
     """
 
     _S3_OBJECT_OPTION_MAP = {
@@ -70,8 +74,12 @@ class S3Backend(BaseBackend):
         self.client = self.s3.meta.client
         self.bucket = self.s3.Bucket(config.get("bucket_name") or name)
 
-        if not self.bucket.creation_date:
-            # The bucket does not exist, create it
+        # Opt-in because checking for the bucket costs a ListBuckets request
+        # (boto3 has no way to load a single bucket's attributes), made by every
+        # process at startup: an unavailable S3 then prevents the application
+        # from starting at all, even though it does not need S3 until it reads
+        # or writes a file.
+        if config.get("create_bucket") and not self.bucket.creation_date:
             self.bucket.create()
 
     def exists(self, filename):

@@ -45,6 +45,19 @@ RUSTFS_HAS_NO_FULL_OBJECT_CHECKSUM = pytest.mark.xfail(
 )
 
 
+def test_init_does_not_reach_s3():
+    # Every process builds its backends at startup: an unavailable S3 must not
+    # prevent the application from starting. Nothing listens on this port.
+    config = Config(
+        endpoint="http://localhost:1",
+        region=S3_REGION,
+        access_key=S3_ACCESS_KEY,
+        secret_key=S3_SECRET_KEY,
+    )
+
+    S3Backend("test", config)
+
+
 class S3BackendTest(BackendTestCase):
     def expected_checksum(self, content):
         return "crc32:{0}".format(format(zlib.crc32(content), "08x"))
@@ -65,7 +78,11 @@ class S3BackendTest(BackendTestCase):
         self.bucket = self.s3.Bucket("test")
 
         self.config = Config(
-            endpoint=S3_SERVER, region=S3_REGION, access_key=S3_ACCESS_KEY, secret_key=S3_SECRET_KEY
+            endpoint=S3_SERVER,
+            region=S3_REGION,
+            access_key=S3_ACCESS_KEY,
+            secret_key=S3_SECRET_KEY,
+            create_bucket=True,
         )
         self.backend = S3Backend("test", self.config)
         yield
