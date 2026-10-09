@@ -1,7 +1,10 @@
 import hashlib
+import io
 import os
 
 import pytest
+
+import flask_storage as fs
 
 from flask_storage.backends.local import LocalBackend
 from flask_storage.storage import Config
@@ -55,3 +58,27 @@ class LocalBackendTest(BackendTestCase):
         root = self.test_dir.join("default")
         backend = LocalBackend("default", Config({}))
         assert backend.root == root
+
+    def test_relative_root_is_made_absolute(self, app, monkeypatch, tmpdir):
+        monkeypatch.chdir(tmpdir)
+        app.config["FS_ROOT"] = "relative"
+        backend = LocalBackend("default", Config({}))
+        assert backend.root == os.path.join(str(tmpdir), "relative", "default")
+        assert os.path.isabs(backend.root)
+
+    def test_serve_with_relative_root(self, app, monkeypatch, tmpdir, faker):
+        # A relative FS_ROOT must anchor to the process CWD for every code path:
+        # write paths resolve it at syscall time, while Flask's send_from_directory
+        # would resolve it against the app package dir, serving 404s.
+        monkeypatch.chdir(tmpdir)
+        app.config["FS_ROOT"] = "relative"
+        storage = fs.Storage("test")
+        app.configure(storage)
+        content = self.b(faker.sentence())
+        storage.backend.save(io.BytesIO(content), "test.txt")
+
+        file_url = storage.url("test.txt")
+        response = app.test_client().get(file_url)
+
+        assert response.status_code == 200
+        assert response.data == content
