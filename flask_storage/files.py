@@ -27,8 +27,8 @@ TEXT = ["txt"]
 DOCUMENTS = "rtf odf ods gnumeric abw doc docx xls xlsx".split()
 
 #: This contains basic image types that are viewable from most browsers (.jpg,
-#: .jpe, .jpeg, .png, .gif, .svg, and .bmp).
-IMAGES = "jpg jpe jpeg png gif svg bmp".split()
+#: .jpe, .jpeg, .png, .gif, .svg, .bmp, and .webp).
+IMAGES = "jpg jpe jpeg png gif svg bmp webp".split()
 
 #: This contains audio file types (.wav, .mp3, .aac, .ogg, .oga, and .flac).
 AUDIO = "wav mp3 aac ogg oga flac".split()

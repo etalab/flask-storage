@@ -37,6 +37,11 @@ def test_all_except():
     assert "exe" not in all_except
 
 
+def test_webp_is_an_image():
+    assert "webp" in files.IMAGES
+    assert "webp" in files.DEFAULTS
+
+
 def test_mime_known_type():
     assert files.mime("test.txt") == "text/plain"
     assert files.mime("test.csv") == "text/csv"
