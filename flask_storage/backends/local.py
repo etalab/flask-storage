@@ -42,7 +42,10 @@ class LocalBackend(BaseBackend):
 
     @cached_property
     def root(self):
-        return self.config.get("root") or os.path.join(self.default_root, self.name)
+        root = self.config.get("root") or os.path.join(self.default_root, self.name)
+        # Pin relative roots to the process CWD: send_from_directory would
+        # otherwise anchor them to the app dir, breaking serve().
+        return os.path.abspath(root)
 
     @cached_property
     def default_root(self):
