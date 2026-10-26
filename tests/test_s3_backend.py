@@ -122,6 +122,17 @@ class S3BackendTest(BackendTestCase):
 
         assert self.bucket.Object("test.csv").content_type == "text/csv"
 
+    def test_svg_is_downloaded_rather_than_displayed(self, faker, utils):
+        self.backend.save(utils.file(faker.binary()), "saved.svg")
+        self.backend.write("written.svg", faker.binary())
+        self.backend.save(utils.file(faker.binary()), "image.png")
+
+        for filename in ("saved.svg", "written.svg"):
+            obj = self.bucket.Object(filename)
+            assert obj.content_type == "image/svg+xml"
+            assert obj.content_disposition == "attachment"
+        assert self.bucket.Object("image.png").content_disposition is None
+
     def test_save_large_file(self):
         # Over the 8MB multipart threshold of boto3.
         content = b"0123456789" * (1024 * 1024)

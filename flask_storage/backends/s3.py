@@ -228,6 +228,10 @@ class S3Backend(BaseBackend):
         # so it has to be set at write time; it defaults to binary/octet-stream.
         if content_type := files.mime(filename):
             extra_args["ContentType"] = content_type
+        # An SVG opened on its own runs the scripts it holds, on the origin of the bucket: it
+        # is downloaded instead. An `<img>` ignores the header and still displays it.
+        if content_type == "image/svg+xml":
+            extra_args["ContentDisposition"] = "attachment"
         # Have S3 checksum what it receives and store the result with the
         # object, so a corrupted transfer is rejected instead of being stored,
         # and `get_metadata` has a digest of the content to report. CRC32 is
