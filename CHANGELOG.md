@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.1.0 (2026-10-26)
+
+- feat: add webp to images ([#29](https://github.com/etalab/flask-storage/pull/29))
+- fix(local): anchor relative FS_ROOT to CWD for all code paths ([#30](https://github.com/etalab/flask-storage/pull/30))
+- fix(s3): store SVG files as attachments, so opening one never runs its scripts ([#31](https://github.com/etalab/flask-storage/pull/31))
+
+
 ## 2.0.3 (2026-10-07)
 
 - feat(s3): only create missing buckets when CREATE_BUCKET is set, so startup does not depend on S3 ([#28](https://github.com/etalab/flask-storage/pull/28))
