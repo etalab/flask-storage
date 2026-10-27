@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.1.1 (2026-10-27)
+
+- feat: allow pillow 13 ([#32](https://github.com/etalab/flask-storage/pull/32))
+
+
 ## 2.1.0 (2026-10-26)
 
 - feat: add webp to images ([#29](https://github.com/etalab/flask-storage/pull/29))
