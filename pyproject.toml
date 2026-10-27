@@ -11,7 +11,7 @@ description = "Simple and easy file storages for Flask"
 requires-python = ">=3.11"
 dependencies = [
     "Flask >= 2.1, < 4.0",
-    "Pillow >= 9.2, < 13",
+    "Pillow >= 9.2, < 14",
     # 1.36 is the first release exposing `ChecksumType`, which the S3 backend
     # needs to ask for a checksum of the whole object rather than of its parts.
     "boto3 >= 1.36, < 2.0",
