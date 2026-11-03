@@ -166,6 +166,81 @@ class S3BackendTest(BackendTestCase):
 
         self.assert_bin_equal("stream.bin", content)
 
+    def test_save_use_threads_defaults_to_false(self, monkeypatch):
+        # Threading was never on, so the default stays `False`: only hosts that
+        # choose to can pay for the thread pool an upload otherwise builds.
+        import flask_storage.backends.s3 as s3_module
+
+        original = s3_module.TransferConfig
+        captured = {}
+
+        def capture_transfer_config(**kwargs):
+            captured["use_threads"] = kwargs.get("use_threads")
+            return original(**kwargs)
+
+        monkeypatch.setattr(s3_module, "TransferConfig", capture_transfer_config)
+        content = b"0123456789" * (1024 * 1024)
+
+        self.backend.save(io.BytesIO(content), "default-threads.bin")
+
+        assert captured["use_threads"] is False
+
+    def test_save_use_threads_config_enables_threading(self, monkeypatch):
+        import flask_storage.backends.s3 as s3_module
+
+        original = s3_module.TransferConfig
+        captured = {}
+
+        def capture_transfer_config(**kwargs):
+            captured["use_threads"] = kwargs.get("use_threads")
+            return original(**kwargs)
+
+        monkeypatch.setattr(s3_module, "TransferConfig", capture_transfer_config)
+        self.backend.config["use_threads"] = True
+        content = b"0123456789" * (1024 * 1024)
+
+        self.backend.save(io.BytesIO(content), "threaded.bin")
+
+        assert captured["use_threads"] is True
+        self.assert_bin_equal("threaded.bin", content)
+
+    def test_save_use_threads_none_falls_back_to_false(self, monkeypatch):
+        # An explicit `None` (e.g. from an unset environment variable) must not
+        # re-enable threading; it falls back to the `False` default.
+        import flask_storage.backends.s3 as s3_module
+
+        original = s3_module.TransferConfig
+        captured = {}
+
+        def capture_transfer_config(**kwargs):
+            captured["use_threads"] = kwargs.get("use_threads")
+            return original(**kwargs)
+
+        monkeypatch.setattr(s3_module, "TransferConfig", capture_transfer_config)
+        self.backend.config["use_threads"] = None
+        content = b"0123456789" * (1024 * 1024)
+
+        self.backend.save(io.BytesIO(content), "none-threads.bin")
+
+        assert captured["use_threads"] is False
+        self.assert_bin_equal("none-threads.bin", content)
+
+    def test_save_threaded_multipart_keeps_a_non_seekable_stream_intact(self):
+        # The checksum of a stream that cannot seek must still be the checksum
+        # of the whole content even when the parts are uploaded in parallel:
+        # s3transfer reads the parts one after the other and hands each already
+        # read part to a worker thread, so the stream is never read twice or
+        # replayed. This exercises the full multipart (over the 8MB threshold)
+        # threaded path against a stream with nothing but `read()`.
+        content = b"0123456789" * (2 * 1024 * 1024)  # 20MB, 2+ multipart parts
+
+        self.backend.config["use_threads"] = True
+        self.backend.save(ReadOnlyStream(content), "threaded-stream.bin")
+
+        self.assert_bin_equal("threaded-stream.bin", content)
+        # Took the multipart path rather than being buffered into a single PUT.
+        assert "-" in self.bucket.Object("threaded-stream.bin").e_tag
+
     @RUSTFS_HAS_NO_FULL_OBJECT_CHECKSUM
     def test_metadata(self, app, faker):
         super().test_metadata(app, faker)

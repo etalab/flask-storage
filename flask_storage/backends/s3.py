@@ -50,6 +50,8 @@ class S3Backend(BaseBackend):
     and optionally:
 
     - `create_bucket`: Create the bucket at startup if it does not exist
+    - `use_threads`: Whether a multipart upload may send its parts in parallel
+      from a pool of threads. ``False`` by default.
     """
 
     _S3_OBJECT_OPTION_MAP = {
@@ -130,21 +132,28 @@ class S3Backend(BaseBackend):
         # digests. `FULL_OBJECT` asks for a digest of the content instead, so a
         # file has the same checksum however many parts it travelled in.
         #
-        # `use_threads` is off because a transfer otherwise builds a pool of a
-        # dozen threads for itself: ten to make the requests, five to submit
-        # them and one for the I/O. A caller serving a web request pays that per
-        # upload and gains little, since the parts are read one after the other
-        # from a single stream anyway, and a host short on memory to map their
-        # stacks fails the upload outright with "can't start new thread". The
-        # transfer is otherwise unchanged: only the executor differs, the
-        # multipart logic and its bounded memory are the same.
+        # `use_threads` is configurable: `False` by default to preserve the
+        # historical behavior of a single sequential transfer. For a stream
+        # that cannot seek, s3transfer reads the parts one after the other in
+        # the single submission thread (each fully buffered in memory), then
+        # hands them to the pool's worker threads to be sent in parallel, so
+        # the stream is never read concurrently nor rewound and the checksum
+        # measured as it is read stays valid. Where the transfer is bound by
+        # round-trips rather than bandwidth (remote regions in particular),
+        # parallelizing the part uploads can speed the upload up severalfold:
+        # set `use_threads=True` in the storage config (e.g.
+        # `RESOURCES_FS_USE_THREADS`) to enable it. Hosts unable to afford the
+        # thread pool (a few threads per upload; a host short on memory to map
+        # their stacks fails the upload outright with "can't start new thread")
+        # are the reason it is not on by default.
         extra_args = self.get_object_extra_args(filename)
         extra_args["ChecksumType"] = "FULL_OBJECT"
+        use_threads = self.config.get("use_threads", False) or False
         self.bucket.upload_fileobj(
             NonClosingProxy(file_or_wfs),
             filename,
             ExtraArgs=extra_args,
-            Config=TransferConfig(use_threads=False),
+            Config=TransferConfig(use_threads=use_threads),
         )
         return filename
 
