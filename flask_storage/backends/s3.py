@@ -143,9 +143,9 @@ class S3Backend(BaseBackend):
         # parallelizing the part uploads can speed the upload up severalfold:
         # set `use_threads=True` in the storage config (e.g.
         # `RESOURCES_FS_USE_THREADS`) to enable it. Hosts unable to afford the
-        # thread pool (a few threads per upload; a host short on memory to map
-        # their stacks fails the upload outright with "can't start new thread")
-        # are the reason it is not on by default.
+        # thread pool (a handful of threads per upload; a host short on memory
+        # to map their stacks fails the upload outright with "can't start new
+        # thread") are the reason it is not on by default.
         extra_args = self.get_object_extra_args(filename)
         extra_args["ChecksumType"] = "FULL_OBJECT"
         use_threads = self.config.get("use_threads", False) or False

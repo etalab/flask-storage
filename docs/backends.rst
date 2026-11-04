@@ -28,9 +28,17 @@ Optional settings:
 - ``USE_THREADS``: Whether a multipart upload may send its parts in parallel
   from a pool of threads. ``False`` by default. Set it to ``True`` (e.g.
   ``RESOURCES_FS_USE_THREADS = True``) when an upload is bound by round-trips
-  rather than bandwidth. It is off by default because the pool of ~12 threads
-  and the parts buffered in memory can be too much for a memory-constrained
-  host for non-seekable stream.
+  rather than bandwidth. It is off by default because the pool of a handful of
+  threads per upload and the parts buffered in memory can be too much for a
+  memory-constrained host for non-seekable stream.
+
+  .. warning::
+
+      With ``use_threads=True``, s3transfer reads the stream in one of its own
+      threads, **without the Flask application context**. A stream whose
+      ``read()`` relies on ``current_app`` (for example a local backend reading
+      its root from ``current_app.config`` the first time it is used) will fail
+      with "Working outside of application context".
 
 
 GridFS backend (``gridfs``)
