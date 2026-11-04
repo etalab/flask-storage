@@ -106,6 +106,27 @@ def test_configuration_cascading(app):
     assert images.config.endpoint == "http://localhost:9000"
 
 
+def test_s3_use_threads_propagates_from_backend_and_storage_config(app):
+    files = Storage("files")
+    images = Storage("images")
+    app.configure(
+        files,
+        images,
+        FS_BACKEND="s3",
+        FS_S3_ENDPOINT="http://localhost:9000",
+        FS_S3_REGION="us-east-1",
+        FS_S3_ACCESS_KEY="ABCDEFGHIJKLMNOQRSTU",
+        FS_S3_SECRET_KEY="abcdefghiklmnoqrstuvwxyz1234567890abcdef",
+        FS_S3_USE_THREADS=True,
+        IMAGES_FS_USE_THREADS=False,
+    )
+
+    # A backend-wide setting applies to every storage of that backend...
+    assert files.config.use_threads is True
+    # ...unless a single storage overrides it.
+    assert images.config.use_threads is False
+
+
 def test_configurable_extensions(app):
     files = Storage("files", NONE)
     app.configure(files, FS_ALLOW=["txt"])

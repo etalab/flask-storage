@@ -23,6 +23,23 @@ Expect the following settings:
 - ``ACCESS_KEY``: The AWS credential access key
 - ``SECRET_KEY``: The AWS credential secret key
 
+Optional settings:
+
+- ``USE_THREADS``: Whether a multipart upload may send its parts in parallel
+  from a pool of threads. ``False`` by default. Set it to ``True`` (e.g.
+  ``RESOURCES_FS_USE_THREADS = True``) when an upload is bound by round-trips
+  rather than bandwidth. It is off by default because the pool of a handful of
+  threads per upload and the parts buffered in memory can be too much for a
+  memory-constrained host for non-seekable stream.
+
+  .. warning::
+
+      With ``use_threads=True``, s3transfer reads the stream in one of its own
+      threads, **without the Flask application context**. A stream whose
+      ``read()`` relies on ``current_app`` (for example a local backend reading
+      its root from ``current_app.config`` the first time it is used) will fail
+      with "Working outside of application context".
+
 
 GridFS backend (``gridfs``)
 ---------------------------
@@ -88,12 +105,14 @@ Here an example configuration with local files storages and s3 images storage:
     FS_S3_SECRET_KEY = 'abcdefghiklmnoqrstuvwxyz1234567890abcdef'
     FS_S3_URL = 'https://s3.somewhere.com/'
     FS_S3_CREATE_BUCKET = True  # optionnal, create missing buckets at startup (development only)
+    FS_S3_USE_THREADS = True  # optional, send multipart parts in parallel (see above)
 
     # storage specific configuration
     AVATARS_FS_BACKEND = 's3'
     AVATARS_FS_BUCKET_NAME = 'avatars-bucket'  # optionnal, default to storage name
     AVATARS_FS_OBJECT_ACL = 'public-read'  # some S3 providers need to specify the ACL at the object level
     AVATARS_FS_OBJECT_STORAGE_CLASS = 'STANDARD'  # specify the object storage class
+    AVATARS_FS_USE_THREADS = True  # optional, per-storage override
     IMAGES_FS_BACKEND = 's3'
     FILES_FS_URL = 'https://images.somewhere.com/'
     FILES_FS_URL = 'https://files.somewhere.com/'
