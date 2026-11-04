@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.1.2 (2026-11-04)
+
+- feat(s3): add a use_threads config ([#33](https://github.com/etalab/flask-storage/pull/33))
+
+
 ## 2.1.1 (2026-10-27)
 
 - feat: allow pillow 13 ([#32](https://github.com/etalab/flask-storage/pull/32))
